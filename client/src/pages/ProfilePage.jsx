@@ -15,7 +15,9 @@ import {
     Loader,
     MessageCircle,
     UserPlus,
-    UserCheck
+    UserCheck,
+    MapPin,
+    Ban
 } from 'lucide-react';
 
 const INTERESTS = [
@@ -53,9 +55,14 @@ const ProfilePage = () => {
         college: '',
         course: '',
         year: '',
+        location: '',
         interests: [],
         skills: []
     });
+
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [blockedUsersList, setBlockedUsersList] = useState([]);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     const isOwnProfile = !userId || userId === currentUser?._id;
 
@@ -69,16 +76,37 @@ const ProfilePage = () => {
                     college: currentUser.college || '',
                     course: currentUser.course || '',
                     year: currentUser.year?.toString() || '',
+                    location: currentUser.location || '',
                     interests: currentUser.interests || [],
                     skills: currentUser.skills || []
                 });
             }
+            fetchBlockedUsers();
             setLoading(false);
         } else {
             fetchUserProfile();
             fetchConnectionStatus();
+            fetchInteractionStatus();
         }
     }, [userId, currentUser, isOwnProfile]);
+
+    const fetchBlockedUsers = async () => {
+        try {
+            const data = await api.getBlockedUsers();
+            setBlockedUsersList(data);
+        } catch (e) {
+            console.error('Error fetching blocked users:', e);
+        }
+    };
+
+    const fetchInteractionStatus = async () => {
+        try {
+            const data = await api.getInteractionStatus(userId);
+            setIsBlocked(data.isBlocked);
+        } catch (e) {
+            console.error('Failed to get interaction status:', e);
+        }
+    };
 
     const fetchUserProfile = async () => {
         setLoading(true);
@@ -139,6 +167,15 @@ const ProfilePage = () => {
         }
     };
 
+    const handleBlockUser = async () => {
+        try {
+            const res = await api.blockUser(userId);
+            setIsBlocked(res.blocked);
+        } catch (e) {
+            console.error('Failed to block user:', e);
+        }
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -169,6 +206,27 @@ const ProfilePage = () => {
         }
     };
 
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadingAvatar(true);
+        setError('');
+        try {
+            const updatedUser = await api.uploadAvatar(file);
+            setProfileUser(updatedUser);
+            // Update auth context user if it's the current user
+            if (isOwnProfile) {
+                // You might need an update user method in AuthContext, or just rely on a page reload if it's simpler
+                window.location.reload();
+            }
+        } catch (error) {
+            setError(error.message || 'Failed to upload image');
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
+
     const handleCancel = () => {
         setFormData({
             name: currentUser.name || '',
@@ -176,6 +234,7 @@ const ProfilePage = () => {
             college: currentUser.college || '',
             course: currentUser.course || '',
             year: currentUser.year?.toString() || '',
+            location: currentUser.location || '',
             interests: currentUser.interests || [],
             skills: currentUser.skills || []
         });
@@ -252,15 +311,24 @@ const ProfilePage = () => {
                     <div className="header-content">
                         <div className="avatar-section">
                             <div className="profile-avatar">
-                                {displayUser?.avatar ? (
+                                {uploadingAvatar ? (
+                                    <Loader size={40} className="animate-spin" />
+                                ) : displayUser?.avatar ? (
                                     <img src={displayUser.avatar} alt={displayUser.name} />
                                 ) : (
                                     <span>{displayUser?.name?.charAt(0) || 'U'}</span>
                                 )}
                                 {isOwnProfile && isEditing && (
-                                    <button className="avatar-edit-btn">
+                                    <label className="avatar-edit-btn">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
+                                            onChange={handleAvatarChange}
+                                            disabled={uploadingAvatar}
+                                        />
                                         <Camera size={16} />
-                                    </button>
+                                    </label>
                                 )}
                             </div>
                         </div>
@@ -284,6 +352,12 @@ const ProfilePage = () => {
                                     <Mail size={16} />
                                     {displayUser?.email}
                                 </span>
+                                {displayUser?.location && (
+                                    <span className="meta-item">
+                                        <MapPin size={16} />
+                                        {displayUser?.location}
+                                    </span>
+                                )}
                                 {displayUser?.college && (
                                     <span className="meta-item">
                                         <Building size={16} />
@@ -354,6 +428,13 @@ const ProfilePage = () => {
                                             Connect
                                         </button>
                                     )}
+                                    <button
+                                        className={`btn ${isBlocked ? 'btn-danger' : 'btn-outline'}`}
+                                        onClick={handleBlockUser}
+                                    >
+                                        <Ban size={18} />
+                                        {isBlocked ? 'Unblock' : 'Block'}
+                                    </button>
                                 </>
                             )}
                         </div>
@@ -386,6 +467,17 @@ const ProfilePage = () => {
                             <div className="profile-section card">
                                 <h2 className="section-title">Academic Info</h2>
                                 <div className="form-fields">
+                                    <div className="input-group">
+                                        <label>Location</label>
+                                        <input
+                                            type="text"
+                                            name="location"
+                                            className="input"
+                                            value={formData.location}
+                                            onChange={handleChange}
+                                            placeholder="e.g., Delhi, India"
+                                        />
+                                    </div>
                                     <div className="input-group">
                                         <label>College/University</label>
                                         <input
@@ -489,6 +581,41 @@ const ProfilePage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Blocked Users Section (Only for own profile) */}
+                {isOwnProfile && blockedUsersList.length > 0 && (
+                    <div className="profile-section card mt-4" style={{ marginTop: '1.5rem' }}>
+                        <h2 className="section-title">Blocked Users</h2>
+                        <div className="blocked-users-list">
+                            {blockedUsersList.map(u => (
+                                <div key={u._id} className="blocked-user-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        {u.avatar ? (
+                                            <img src={u.avatar} style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', objectFit: 'cover' }} alt={u.name} />
+                                        ) : (
+                                            <div style={{ width: '2.5rem', height: '2.5rem', background: 'linear-gradient(135deg, var(--primary-500), var(--secondary-500))', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'white' }}>
+                                                {u.name.charAt(0)}
+                                            </div>
+                                        )}
+                                        <div>
+                                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{u.name}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{u.location ? `${u.location} • ` : ''}{u.college}</div>
+                                        </div>
+                                    </div>
+                                    <button className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }} onClick={async () => {
+                                        try {
+                                            await api.blockUser(u._id);
+                                            setBlockedUsersList(prev => prev.filter(b => b._id !== u._id));
+                                            // Fetch interaction status again to update UI if we're somehow viewing them right now, though theoretically this is 'My Profile' view
+                                        } catch (e) {
+                                            console.error('Failed to unblock user:', e);
+                                        }
+                                    }}>Unblock</button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Unfriend Confirmation Modal */}
@@ -604,7 +731,7 @@ const ProfilePage = () => {
 
         .header-info {
           flex: 1;
-          min-width: 200px;
+          min-width: 0; /* fixes flex children overflowing */
         }
 
         .profile-name {
@@ -635,6 +762,7 @@ const ProfilePage = () => {
 
         .header-actions {
           display: flex;
+          flex-wrap: wrap;
           gap: 0.75rem;
         }
 

@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Connection from '../models/Connection.js';
 import Message from '../models/Message.js';
 import { authenticate } from '../middleware/auth.js';
+import upload from '../config/cloudinary.js';
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ router.get('/profile', authenticate, async (req, res) => {
 // @access  Private
 router.put('/profile', authenticate, async (req, res) => {
     try {
-        const { name, bio, college, course, year, interests, skills, careerGoals, avatar } = req.body;
+        const { name, bio, college, course, year, interests, skills, careerGoals, avatar, location } = req.body;
 
         const updateFields = {};
         if (name !== undefined) updateFields.name = name;
@@ -41,6 +42,7 @@ router.put('/profile', authenticate, async (req, res) => {
         if (skills !== undefined) updateFields.skills = skills;
         if (careerGoals !== undefined) updateFields.careerGoals = careerGoals;
         if (avatar !== undefined) updateFields.avatar = avatar;
+        if (location !== undefined) updateFields.location = location;
 
         const user = await User.findByIdAndUpdate(
             req.userId,
@@ -62,6 +64,38 @@ router.put('/profile', authenticate, async (req, res) => {
         }
 
         res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   POST /api/users/profile/avatar
+// @desc    Upload user avatar
+// @access  Private
+router.post('/profile/avatar', authenticate, (req, res, next) => {
+    upload.single('avatar')(req, res, function (err) {
+        if (err) {
+            console.error('Multer/Cloudinary error:', err);
+            return res.status(400).json({ message: 'Error uploading image. Check Cloudinary API keys.' });
+        }
+        next();
+    });
+}, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const avatarUrl = req.file.path;
+
+        const user = await User.findByIdAndUpdate(
+            req.userId,
+            { avatar: avatarUrl },
+            { new: true }
+        ).populate('connections', 'name email college avatar');
+
+        res.json(user);
+    } catch (error) {
+        console.error('Upload avatar error:', error);
+        res.status(500).json({ message: 'Server error uploading avatar' });
     }
 });
 
@@ -110,7 +144,7 @@ router.get('/dashboard', authenticate, async (req, res) => {
 // @access  Private
 router.get('/search', authenticate, async (req, res) => {
     try {
-        const { q, interest, skill, college, year, page = 1, limit = 20 } = req.query;
+        const { q, interest, skill, college, year, location, page = 1, limit = 20 } = req.query;
 
         const query = {
             _id: { $ne: req.userId } // Exclude current user
@@ -121,7 +155,8 @@ router.get('/search', authenticate, async (req, res) => {
                 { name: { $regex: q, $options: 'i' } },
                 { college: { $regex: q, $options: 'i' } },
                 { interests: { $regex: q, $options: 'i' } },
-                { skills: { $regex: q, $options: 'i' } }
+                { skills: { $regex: q, $options: 'i' } },
+                { location: { $regex: q, $options: 'i' } }
             ];
         }
 
@@ -139,6 +174,10 @@ router.get('/search', authenticate, async (req, res) => {
 
         if (year) {
             query.year = parseInt(year);
+        }
+
+        if (location) {
+            query.location = { $regex: location, $options: 'i' };
         }
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -238,6 +277,42 @@ router.put('/clear-chat/:userId', authenticate, async (req, res) => {
         res.json({ message: 'Chat cleared', clearedAt: new Date() });
     } catch (error) {
         console.error('Clear chat error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/users/interaction-status/:userId
+// @desc    Get mute/block status for a specific user
+// @access  Private
+router.get('/interaction-status/:userId', authenticate, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        const targetUserId = req.params.userId;
+
+        const isMuted = user.mutedUsers.some(id => id.toString() === targetUserId);
+        const isBlocked = user.blockedUsers.some(id => id.toString() === targetUserId);
+
+        res.json({ isMuted, isBlocked });
+    } catch (error) {
+        console.error('Get interaction status error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/users/blocked
+// @desc    Get list of blocked users
+// @access  Private
+router.get('/blocked', authenticate, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).populate('blockedUsers', 'name college avatar location');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json(user.blockedUsers);
+    } catch (error) {
+        console.error('Get blocked users error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

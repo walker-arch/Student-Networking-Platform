@@ -93,7 +93,8 @@ const DiscoverPage = () => {
     interests: [],
     skills: [],
     year: '',
-    college: ''
+    college: '',
+    location: ''
   });
 
   useEffect(() => {
@@ -141,6 +142,7 @@ const DiscoverPage = () => {
 
     if (filters.year && student.year !== parseInt(filters.year)) return false;
     if (filters.college && !(student.college || '').toLowerCase().includes(filters.college.toLowerCase())) return false;
+    if (filters.location && !(student.location || '').toLowerCase().includes(filters.location.toLowerCase())) return false;
 
     return true;
   });
@@ -210,9 +212,19 @@ const DiscoverPage = () => {
                 onChange={(e) => setFilters(prev => ({ ...prev, college: e.target.value }))}
               />
             </div>
+            <div className="filter-group">
+              <label>Location</label>
+              <input
+                type="text"
+                className="input"
+                placeholder="Filter by location..."
+                value={filters.location}
+                onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+              />
+            </div>
             <button
               className="btn btn-ghost"
-              onClick={() => setFilters({ interests: [], skills: [], year: '', college: '' })}
+              onClick={() => setFilters({ interests: [], skills: [], year: '', college: '', location: '' })}
             >
               Clear Filters
             </button>
@@ -420,7 +432,7 @@ const StudentCard = ({ student, onConnect, style }) => {
         <div className="student-info">
           <span className="info-item">
             <MapPin size={14} />
-            {student.college || 'Unknown College'}
+            {student.location ? `${student.location} • ${student.college || ''}` : student.college || 'Unknown Location'}
           </span>
           <span className="info-item">
             <GraduationCap size={14} />

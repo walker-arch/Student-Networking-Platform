@@ -62,6 +62,28 @@ class ApiService {
         });
     }
 
+    async uploadAvatar(file) {
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        const url = `${this.baseUrl}/users/profile/avatar`;
+        const token = this.getToken();
+
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            // Do not set Content-Type header manually for FormData to allow browser to generate boundary
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Image upload failed' }));
+            throw new Error(error.message || 'Image upload failed');
+        }
+
+        return response.json();
+    }
+
     async getUserById(userId) {
         return this.request(`/users/${userId}`);
     }
@@ -129,7 +151,21 @@ class ApiService {
         });
     }
 
+    async deleteMessage(messageId) {
+        return this.request(`/messages/${messageId}`, {
+            method: 'DELETE'
+        });
+    }
+
     // User interaction endpoints
+    async getInteractionStatus(userId) {
+        return this.request(`/users/interaction-status/${userId}`);
+    }
+
+    async getBlockedUsers() {
+        return this.request('/users/blocked');
+    }
+
     async muteUser(userId) {
         return this.request(`/users/mute/${userId}`, { method: 'PUT' });
     }

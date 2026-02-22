@@ -217,6 +217,30 @@ router.post('/:userId', authenticate, async (req, res) => {
     }
 });
 
+// @route   DELETE /api/messages/:messageId
+// @desc    Delete a message
+// @access  Private
+router.delete('/:messageId', authenticate, async (req, res) => {
+    try {
+        const message = await Message.findById(req.params.messageId);
+
+        if (!message) {
+            return res.status(404).json({ message: 'Message not found' });
+        }
+
+        if (message.sender.toString() !== req.userId.toString()) {
+            return res.status(403).json({ message: 'Not authorized to delete this message' });
+        }
+
+        await Message.findByIdAndDelete(req.params.messageId);
+
+        res.json({ message: 'Message removed' });
+    } catch (error) {
+        console.error('Delete message error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Helper function to format message time
 function formatMessageTime(date) {
     const now = new Date();
