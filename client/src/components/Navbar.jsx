@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import api from '../services/api';
 import {
   Home,
   Users,
@@ -12,9 +13,12 @@ import {
   LogOut,
   User,
   Menu,
-  X
+  X,
+  Check,
+  UserPlus,
+  CheckCircle
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -23,6 +27,110 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const data = await api.getUnreadCount();
+      setUnreadCount(data.count);
+    } catch (e) { /* silent */ }
+  };
+
+  const fetchNotifications = async () => {
+    setNotifLoading(true);
+    try {
+      const data = await api.getNotifications();
+      setNotifications(data);
+    } catch (e) {
+      setNotifications([]);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  const toggleNotifDropdown = () => {
+    if (!notifOpen) {
+      fetchNotifications();
+    }
+    setNotifOpen(!notifOpen);
+    setProfileDropdownOpen(false);
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (e) { /* silent */ }
+  };
+
+  const handleNotifClick = async (notif) => {
+    if (!notif.read) {
+      try {
+        await api.markNotificationRead(notif._id);
+        setNotifications(prev =>
+          prev.map(n => n._id === notif._id ? { ...n, read: true } : n)
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch (e) { /* silent */ }
+    }
+    setNotifOpen(false);
+    if (notif.type === 'connection_request' || notif.type === 'connection_accepted') {
+      navigate('/connections');
+    } else if (notif.type === 'new_message' && notif.sender?._id) {
+      navigate(`/messages/${notif.sender._id}`);
+    }
+  };
+
+  const getNotifIcon = (type) => {
+    switch (type) {
+      case 'connection_request': return <UserPlus size={16} />;
+      case 'connection_accepted': return <CheckCircle size={16} />;
+      case 'new_message': return <MessageCircle size={16} />;
+      default: return <Bell size={16} />;
+    }
+  };
+
+  const formatTime = (dateStr) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - d;
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days === 1) return 'Yesterday';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
   const handleLogout = () => {
     logout();
@@ -56,7 +164,6 @@ const Navbar = () => {
           justifyContent: 'space-between',
           height: '4rem'
         }}>
-          {/* Brand */}
           <Link to="/" style={{
             display: 'flex',
             alignItems: 'center',
@@ -86,7 +193,6 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* Actions */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -244,41 +350,187 @@ const Navbar = () => {
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
-          <button style={{
-            position: 'relative',
-            width: '2.5rem',
-            height: '2.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--bg-tertiary)',
-            border: 'none',
-            borderRadius: '0.5rem',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer'
-          }}>
-            <Bell size={20} />
-            <span style={{
-              position: 'absolute',
-              top: '-2px',
-              right: '-2px',
-              width: '1rem',
-              height: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-              color: 'white',
-              fontSize: '0.625rem',
-              fontWeight: 600,
-              borderRadius: '9999px'
-            }}>3</span>
-          </button>
+          {/* Notification Bell */}
+          <div ref={notifRef} style={{ position: 'relative' }}>
+            <button
+              onClick={toggleNotifDropdown}
+              style={{
+                position: 'relative',
+                width: '2.5rem',
+                height: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: notifOpen ? 'var(--primary-100)' : 'var(--bg-tertiary)',
+                border: 'none',
+                borderRadius: '0.5rem',
+                color: notifOpen ? 'var(--primary-600)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-2px',
+                  minWidth: '1rem',
+                  height: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 4px',
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  color: 'white',
+                  fontSize: '0.625rem',
+                  fontWeight: 600,
+                  borderRadius: '9999px'
+                }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {notifOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 0.5rem)',
+                right: 0,
+                width: '360px',
+                maxHeight: '420px',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '0.75rem',
+                boxShadow: '0 10px 40px var(--shadow-color)',
+                overflow: 'hidden',
+                animation: 'slideDown 0.2s ease',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1rem',
+                  borderBottom: '1px solid var(--border-color)'
+                }}>
+                  <h4 style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Notifications</h4>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllRead}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--primary-500)',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        fontWeight: 500
+                      }}
+                    >
+                      <Check size={14} />
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', maxHeight: '350px' }}>
+                  {notifLoading ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      Loading...
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div style={{
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: 'var(--text-muted)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <Bell size={28} />
+                      <p style={{ margin: 0 }}>No notifications yet</p>
+                    </div>
+                  ) : (
+                    notifications.map(notif => (
+                      <div
+                        key={notif._id}
+                        onClick={() => handleNotifClick(notif)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '0.75rem',
+                          padding: '0.85rem 1rem',
+                          cursor: 'pointer',
+                          background: notif.read ? 'transparent' : 'var(--bg-secondary)',
+                          borderBottom: '1px solid var(--border-color)',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-tertiary)'}
+                        onMouseLeave={e => e.currentTarget.style.background = notif.read ? 'transparent' : 'var(--bg-secondary)'}
+                      >
+                        <div style={{
+                          width: '2.25rem',
+                          height: '2.25rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '9999px',
+                          flexShrink: 0,
+                          background: notif.type === 'connection_request'
+                            ? 'linear-gradient(135deg, var(--primary-100), var(--primary-200))'
+                            : notif.type === 'connection_accepted'
+                              ? 'linear-gradient(135deg, #dcfce7, #bbf7d0)'
+                              : 'linear-gradient(135deg, var(--secondary-100), var(--secondary-200))',
+                          color: notif.type === 'connection_request'
+                            ? 'var(--primary-600)'
+                            : notif.type === 'connection_accepted'
+                              ? '#16a34a'
+                              : 'var(--secondary-600)'
+                        }}>
+                          {getNotifIcon(notif.type)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{
+                            margin: 0,
+                            fontSize: '0.85rem',
+                            color: 'var(--text-primary)',
+                            fontWeight: notif.read ? 400 : 600,
+                            lineHeight: 1.4
+                          }}>
+                            {notif.message}
+                          </p>
+                          <span style={{
+                            fontSize: '0.7rem',
+                            color: 'var(--text-muted)'
+                          }}>
+                            {formatTime(notif.createdAt)}
+                          </span>
+                        </div>
+                        {!notif.read && (
+                          <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '9999px',
+                            background: 'var(--primary-500)',
+                            flexShrink: 0,
+                            marginTop: '6px'
+                          }} />
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Profile Dropdown */}
-          <div style={{ position: 'relative' }}>
+          <div ref={profileRef} style={{ position: 'relative' }}>
             <button
-              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+              onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setNotifOpen(false); }}
               style={{
                 background: 'none',
                 border: 'none',

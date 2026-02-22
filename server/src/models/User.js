@@ -45,6 +45,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    profileViews: {
+        type: Number,
+        default: 0
+    },
     interests: [{
         type: String,
         trim: true
@@ -60,6 +64,18 @@ const userSchema = new mongoose.Schema({
     connections: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    }],
+    mutedUsers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    blockedUsers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    clearedChats: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        clearedAt: { type: Date, default: Date.now }
     }]
 }, {
     timestamps: true

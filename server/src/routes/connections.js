@@ -1,6 +1,7 @@
 import express from 'express';
 import Connection from '../models/Connection.js';
 import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -43,12 +44,49 @@ router.get('/', authenticate, async (req, res) => {
             createdAt: req.createdAt
         }));
 
+        // Get sent pending requests by current user
+        const sentRequests = await Connection.find({
+            requester: req.userId,
+            status: 'pending'
+        }).populate('recipient', 'name email college course interests avatar');
+
+        const formattedSentRequests = sentRequests.map(sr => ({
+            _id: sr._id,
+            recipient: sr.recipient,
+            createdAt: sr.createdAt
+        }));
+
         res.json({
             connections: formattedConnections,
-            requests: formattedRequests
+            requests: formattedRequests,
+            sentRequests: formattedSentRequests
         });
     } catch (error) {
         console.error('Get connections error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/connections/status/:userId
+// @desc    Check connection status with a specific user
+// @access  Private
+router.get('/status/:userId', authenticate, async (req, res) => {
+    try {
+        const connection = await Connection.findOne({
+            $or: [
+                { requester: req.userId, recipient: req.params.userId },
+                { requester: req.params.userId, recipient: req.userId }
+            ],
+            status: { $in: ['accepted', 'pending'] }
+        });
+
+        if (!connection) {
+            return res.json({ status: 'none' });
+        }
+
+        res.json({ status: connection.status, connectionId: connection._id });
+    } catch (error) {
+        console.error('Check connection status error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -98,6 +136,18 @@ router.post('/request/:userId', authenticate, async (req, res) => {
 
         await connection.save();
 
+        // Create notification for recipient
+        try {
+            const requesterUser = await User.findById(req.userId);
+            await Notification.create({
+                recipient: recipientId,
+                sender: req.userId,
+                type: 'connection_request',
+                message: `${requesterUser.name} sent you a connection request`,
+                relatedId: connection._id
+            });
+        } catch (e) { console.error('Notification error:', e); }
+
         res.status(201).json({
             message: 'Connection request sent',
             connection
@@ -138,6 +188,18 @@ router.put('/accept/:requestId', authenticate, async (req, res) => {
         await User.findByIdAndUpdate(connection.recipient, {
             $addToSet: { connections: connection.requester }
         });
+
+        // Create notification for requester
+        try {
+            const acceptorUser = await User.findById(req.userId);
+            await Notification.create({
+                recipient: connection.requester,
+                sender: req.userId,
+                type: 'connection_accepted',
+                message: `${acceptorUser.name} accepted your connection request`,
+                relatedId: connection._id
+            });
+        } catch (e) { console.error('Notification error:', e); }
 
         res.json({
             message: 'Connection accepted',

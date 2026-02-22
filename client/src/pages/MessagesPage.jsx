@@ -1,334 +1,419 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import {
-    Send,
-    ArrowLeft,
-    Search,
-    MoreVertical,
-    Phone,
-    Video,
-    Loader,
-    MessageCircle
+  Send,
+  ArrowLeft,
+  Search,
+  MoreVertical,
+  Loader,
+  MessageCircle
 } from 'lucide-react';
 
 // Mock data
 const MOCK_CONVERSATIONS = [
-    {
-        _id: 'c1',
-        user: {
-            _id: 'u1',
-            name: 'Priya Sharma',
-            college: 'IIT Delhi',
-            online: true
-        },
-        lastMessage: {
-            content: 'That sounds great! Let\'s discuss the project tomorrow.',
-            createdAt: '10:30 AM',
-            sender: 'u1'
-        },
-        unread: 2
+  {
+    _id: 'c1',
+    user: {
+      _id: 'u1',
+      name: 'Priya Sharma',
+      college: 'IIT Delhi',
+      online: true
     },
-    {
-        _id: 'c2',
-        user: {
-            _id: 'u2',
-            name: 'Rahul Verma',
-            college: 'BITS Pilani',
-            online: false
-        },
-        lastMessage: {
-            content: 'Thanks for connecting!',
-            createdAt: 'Yesterday',
-            sender: 'me'
-        },
-        unread: 0
+    lastMessage: {
+      content: 'That sounds great! Let\'s discuss the project tomorrow.',
+      createdAt: '10:30 AM',
+      sender: 'u1'
     },
-    {
-        _id: 'c3',
-        user: {
-            _id: 'u3',
-            name: 'Ananya Patel',
-            college: 'NIT Trichy',
-            online: true
-        },
-        lastMessage: {
-            content: 'Have you checked out the hackathon?',
-            createdAt: 'Yesterday',
-            sender: 'u3'
-        },
-        unread: 0
-    }
+    unread: 2
+  },
+  {
+    _id: 'c2',
+    user: {
+      _id: 'u2',
+      name: 'Rahul Verma',
+      college: 'BITS Pilani',
+      online: false
+    },
+    lastMessage: {
+      content: 'Thanks for connecting!',
+      createdAt: 'Yesterday',
+      sender: 'me'
+    },
+    unread: 0
+  },
+  {
+    _id: 'c3',
+    user: {
+      _id: 'u3',
+      name: 'Ananya Patel',
+      college: 'NIT Trichy',
+      online: true
+    },
+    lastMessage: {
+      content: 'Have you checked out the hackathon?',
+      createdAt: 'Yesterday',
+      sender: 'u3'
+    },
+    unread: 0
+  }
 ];
 
 const MOCK_MESSAGES = [
-    {
-        _id: 'm1',
-        sender: 'u1',
-        content: 'Hey! I saw your profile and noticed we have similar interests in ML.',
-        createdAt: '10:00 AM'
-    },
-    {
-        _id: 'm2',
-        sender: 'me',
-        content: 'Hi Priya! Yes, I\'m currently working on a computer vision project.',
-        createdAt: '10:15 AM'
-    },
-    {
-        _id: 'm3',
-        sender: 'u1',
-        content: 'That\'s awesome! I\'m doing research on image classification. Maybe we can collaborate?',
-        createdAt: '10:20 AM'
-    },
-    {
-        _id: 'm4',
-        sender: 'me',
-        content: 'Definitely! I\'d love to hear more about your research.',
-        createdAt: '10:25 AM'
-    },
-    {
-        _id: 'm5',
-        sender: 'u1',
-        content: 'That sounds great! Let\'s discuss the project tomorrow.',
-        createdAt: '10:30 AM'
-    }
+  {
+    _id: 'm1',
+    sender: 'u1',
+    content: 'Hey! I saw your profile and noticed we have similar interests in ML.',
+    createdAt: '10:00 AM'
+  },
+  {
+    _id: 'm2',
+    sender: 'me',
+    content: 'Hi Priya! Yes, I\'m currently working on a computer vision project.',
+    createdAt: '10:15 AM'
+  },
+  {
+    _id: 'm3',
+    sender: 'u1',
+    content: 'That\'s awesome! I\'m doing research on image classification. Maybe we can collaborate?',
+    createdAt: '10:20 AM'
+  },
+  {
+    _id: 'm4',
+    sender: 'me',
+    content: 'Definitely! I\'d love to hear more about your research.',
+    createdAt: '10:25 AM'
+  },
+  {
+    _id: 'm5',
+    sender: 'u1',
+    content: 'That sounds great! Let\'s discuss the project tomorrow.',
+    createdAt: '10:30 AM'
+  }
 ];
 
 const MessagesPage = () => {
-    const { userId } = useParams();
-    const { user: currentUser } = useAuth();
-    const [conversations, setConversations] = useState([]);
-    const [activeConversation, setActiveConversation] = useState(null);
-    const [messages, setMessages] = useState([]);
-    const [newMessage, setNewMessage] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [sending, setSending] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const messagesEndRef = useRef(null);
+  const { userId } = useParams();
+  const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
+  const [conversations, setConversations] = useState([]);
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toast, setToast] = useState(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const messagesEndRef = useRef(null);
+  const menuRef = useRef(null);
 
-    useEffect(() => {
-        fetchConversations();
-    }, []);
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
 
-    useEffect(() => {
-        if (userId) {
-            const conv = conversations.find(c => c.user._id === userId);
-            if (conv) {
-                setActiveConversation(conv);
-                fetchMessages(userId);
-            }
-        }
-    }, [userId, conversations]);
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
-    const fetchConversations = async () => {
-        setLoading(true);
-        try {
-            const data = await api.getConversations();
-            setConversations(data);
-        } catch (error) {
-            console.log('Using mock data');
-            setConversations(MOCK_CONVERSATIONS);
-        } finally {
-            setLoading(false);
-        }
+  // Close 3-dots menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
     };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    const fetchMessages = async (userId) => {
-        try {
-            const data = await api.getMessages(userId);
-            setMessages(data);
-        } catch (error) {
-            console.log('Using mock messages');
-            setMessages(MOCK_MESSAGES);
-        }
-    };
+  useEffect(() => {
+    fetchConversations();
+  }, []);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-
-    const handleSendMessage = async (e) => {
-        e.preventDefault();
-        if (!newMessage.trim() || !activeConversation) return;
-
-        const messageContent = newMessage.trim();
-        setNewMessage('');
-        setSending(true);
-
-        // Optimistic update
-        const optimisticMessage = {
-            _id: `temp-${Date.now()}`,
-            sender: 'me',
-            content: messageContent,
-            createdAt: 'Just now'
-        };
-        setMessages(prev => [...prev, optimisticMessage]);
-
-        try {
-            await api.sendMessage(activeConversation.user._id, messageContent);
-        } catch (error) {
-            console.error('Failed to send message:', error);
-        } finally {
-            setSending(false);
-        }
-    };
-
-    const selectConversation = (conversation) => {
-        setActiveConversation(conversation);
-        fetchMessages(conversation.user._id);
-        // Mark as read
+  useEffect(() => {
+    if (userId && !loading) {
+      const conv = conversations.find(c => c.user?._id === userId);
+      if (conv) {
+        setActiveConversation(conv);
+        fetchMessages(userId);
+        // Clear unread badge when opening via URL
         setConversations(prev =>
-            prev.map(c => c._id === conversation._id ? { ...c, unread: 0 } : c)
+          prev.map(c => c._id === conv._id ? { ...c, unread: 0 } : c)
         );
+      } else {
+        // No prior conversation — create a temporary one by fetching user info
+        const createTempConversation = async () => {
+          try {
+            const user = await api.getUserById(userId);
+            const tempConv = {
+              _id: userId,
+              user: { _id: userId, name: user.name, college: user.college, online: false },
+              lastMessage: null,
+              unread: 0
+            };
+            setActiveConversation(tempConv);
+            setMessages([]);
+          } catch (e) {
+            console.error('Failed to load user for messaging:', e);
+          }
+        };
+        createTempConversation();
+      }
+    }
+  }, [userId, conversations, loading]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const fetchConversations = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getConversations();
+      setConversations(data);
+    } catch (error) {
+      console.log('Using mock data');
+      setConversations(MOCK_CONVERSATIONS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMessages = async (userId) => {
+    try {
+      const data = await api.getMessages(userId);
+      setMessages(data);
+    } catch (error) {
+      console.log('Using mock messages');
+      setMessages(MOCK_MESSAGES);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !activeConversation) return;
+
+    const messageContent = newMessage.trim();
+    setNewMessage('');
+    setSending(true);
+
+    // Optimistic update
+    const optimisticMessage = {
+      _id: `temp-${Date.now()}`,
+      sender: 'me',
+      content: messageContent,
+      createdAt: 'Just now'
     };
+    setMessages(prev => [...prev, optimisticMessage]);
 
-    const filteredConversations = conversations.filter(conv =>
-        conv.user.name.toLowerCase().includes(searchQuery.toLowerCase())
+    try {
+      await api.sendMessage(activeConversation.user._id, messageContent);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const selectConversation = (conversation) => {
+    setActiveConversation(conversation);
+    fetchMessages(conversation.user._id);
+    // Mark as read
+    setConversations(prev =>
+      prev.map(c => c._id === conversation._id ? { ...c, unread: 0 } : c)
     );
+  };
 
-    return (
-        <div className="messages-page">
-            {/* Conversations Sidebar */}
-            <div className={`conversations-sidebar ${activeConversation ? 'hide-mobile' : ''}`}>
-                <div className="sidebar-header">
-                    <h2>Messages</h2>
-                </div>
+  const filteredConversations = conversations.filter(conv =>
+    conv.user?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-                <div className="search-box">
-                    <Search size={18} className="search-icon" />
-                    <input
-                        type="text"
-                        placeholder="Search conversations..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                </div>
+  return (
+    <div className="messages-page">
+      {/* Conversations Sidebar */}
+      <div className={`conversations-sidebar ${activeConversation ? 'hide-mobile' : ''}`}>
+        <div className="sidebar-header">
+          <button
+            className="page-back-btn"
+            onClick={() => navigate(-1)}
+            title="Go back"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h2>Messages</h2>
+        </div>
 
-                <div className="conversations-list">
-                    {loading ? (
-                        <div className="loading-state">
-                            <Loader size={24} className="animate-spin" />
-                        </div>
-                    ) : filteredConversations.length === 0 ? (
-                        <div className="empty-conversations">
-                            <MessageCircle size={32} />
-                            <p>No conversations yet</p>
-                        </div>
-                    ) : (
-                        filteredConversations.map(conv => (
-                            <div
-                                key={conv._id}
-                                className={`conversation-item ${activeConversation?._id === conv._id ? 'active' : ''}`}
-                                onClick={() => selectConversation(conv)}
-                            >
-                                <div className="conv-avatar">
-                                    <span>{conv.user.name.charAt(0)}</span>
-                                    {conv.user.online && <div className="online-indicator" />}
-                                </div>
-                                <div className="conv-info">
-                                    <div className="conv-header">
-                                        <span className="conv-name">{conv.user.name}</span>
-                                        <span className="conv-time">{conv.lastMessage?.createdAt}</span>
-                                    </div>
-                                    <p className="conv-preview">
-                                        {conv.lastMessage?.sender === 'me' && 'You: '}
-                                        {conv.lastMessage?.content}
-                                    </p>
-                                </div>
-                                {conv.unread > 0 && (
-                                    <div className="unread-badge">{conv.unread}</div>
-                                )}
-                            </div>
-                        ))
-                    )}
-                </div>
+        <div className="search-box">
+          <Search size={18} className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="conversations-list">
+          {loading ? (
+            <div className="loading-state">
+              <Loader size={24} className="animate-spin" />
             </div>
-
-            {/* Chat Area */}
-            <div className={`chat-area ${!activeConversation ? 'hide-mobile' : ''}`}>
-                {activeConversation ? (
-                    <>
-                        {/* Chat Header */}
-                        <div className="chat-header">
-                            <button
-                                className="back-btn"
-                                onClick={() => setActiveConversation(null)}
-                            >
-                                <ArrowLeft size={20} />
-                            </button>
-                            <div className="chat-user-info">
-                                <div className="chat-avatar">
-                                    <span>{activeConversation.user.name.charAt(0)}</span>
-                                    {activeConversation.user.online && <div className="online-indicator" />}
-                                </div>
-                                <div>
-                                    <h3>{activeConversation.user.name}</h3>
-                                    <span className="chat-status">
-                                        {activeConversation.user.online ? 'Online' : 'Offline'}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="chat-actions">
-                                <button className="action-btn" title="Voice call">
-                                    <Phone size={18} />
-                                </button>
-                                <button className="action-btn" title="Video call">
-                                    <Video size={18} />
-                                </button>
-                                <button className="action-btn">
-                                    <MoreVertical size={18} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Messages */}
-                        <div className="messages-container">
-                            {messages.map(message => (
-                                <div
-                                    key={message._id}
-                                    className={`message ${message.sender === 'me' ? 'sent' : 'received'}`}
-                                >
-                                    <div className="message-bubble">
-                                        <p>{message.content}</p>
-                                        <span className="message-time">{message.createdAt}</span>
-                                    </div>
-                                </div>
-                            ))}
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        {/* Message Input */}
-                        <form className="message-input-form" onSubmit={handleSendMessage}>
-                            <input
-                                type="text"
-                                placeholder="Type a message..."
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                            />
-                            <button
-                                type="submit"
-                                className="send-btn"
-                                disabled={!newMessage.trim() || sending}
-                            >
-                                <Send size={20} />
-                            </button>
-                        </form>
-                    </>
-                ) : (
-                    <div className="no-conversation-selected">
-                        <MessageCircle size={48} />
-                        <h3>Select a conversation</h3>
-                        <p>Choose a conversation from the sidebar to start messaging</p>
-                    </div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="empty-conversations">
+              <MessageCircle size={32} />
+              <p>No conversations yet</p>
+            </div>
+          ) : (
+            filteredConversations.map(conv => (
+              <div
+                key={conv._id}
+                className={`conversation-item ${activeConversation?._id === conv._id ? 'active' : ''}`}
+                onClick={() => selectConversation(conv)}
+              >
+                <div className="conv-avatar">
+                  <span>{conv.user.name.charAt(0)}</span>
+                  {conv.user.online && <div className="online-indicator" />}
+                </div>
+                <div className="conv-info">
+                  <div className="conv-header">
+                    <span className="conv-name">{conv.user.name}</span>
+                    <span className="conv-time">{conv.lastMessage?.createdAt}</span>
+                  </div>
+                  <p className="conv-preview">
+                    {conv.lastMessage?.sender === 'me' && 'You: '}
+                    {conv.lastMessage?.content}
+                  </p>
+                </div>
+                {conv.unread > 0 && (
+                  <div className="unread-badge">{conv.unread}</div>
                 )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Chat Area */}
+      <div className={`chat-area ${!activeConversation ? 'hide-mobile' : ''}`}>
+        {activeConversation ? (
+          <>
+            {/* Chat Header */}
+            <div className="chat-header">
+              <button
+                className="back-btn"
+                onClick={() => setActiveConversation(null)}
+              >
+                <ArrowLeft size={20} />
+              </button>
+              <div className="chat-user-info">
+                <div className="chat-avatar">
+                  <span>{activeConversation.user.name.charAt(0)}</span>
+                  {activeConversation.user.online && <div className="online-indicator" />}
+                </div>
+                <div>
+                  <h3>{activeConversation.user.name}</h3>
+                  <span className="chat-status">
+                    {activeConversation.user.online ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+              </div>
+              <div className="chat-actions">
+                <div className="more-menu-wrapper" ref={menuRef}>
+                  <button className="action-btn" onClick={() => setShowMenu(!showMenu)}>
+                    <MoreVertical size={18} />
+                  </button>
+                  {showMenu && (
+                    <div className="more-menu-dropdown">
+                      <button onClick={() => { navigate(`/profile/${activeConversation.user._id}`); setShowMenu(false); }}>View Profile</button>
+                      <button onClick={async () => {
+                        try {
+                          const res = await api.muteUser(activeConversation.user._id);
+                          showToast(res.muted ? '🔇 Notifications muted' : '🔔 Notifications unmuted');
+                        } catch (e) { showToast('Failed to update mute status'); }
+                        setShowMenu(false);
+                      }}>{`Mute Notifications`}</button>
+                      <button onClick={async () => {
+                        try {
+                          const res = await api.blockUser(activeConversation.user._id);
+                          showToast(res.blocked ? '🚫 User blocked' : '✅ User unblocked');
+                        } catch (e) { showToast('Failed to update block status'); }
+                        setShowMenu(false);
+                      }}>Block User</button>
+                      <button onClick={async () => {
+                        try {
+                          await api.clearChat(activeConversation.user._id);
+                          setMessages([]);
+                          setConversations(prev => prev.map(c =>
+                            c._id === activeConversation.user._id ? { ...c, lastMessage: null, unread: 0 } : c
+                          ));
+                          showToast('🗑️ Chat cleared');
+                        } catch (e) { showToast('Failed to clear chat'); }
+                        setShowMenu(false);
+                      }}>Clear Chat</button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <style>{`
+            {/* Messages */}
+            <div className="messages-container">
+              {messages.length === 0 ? (
+                <div className="empty-chat-state">
+                  <p>No messages yet.</p>
+                  <p className="empty-chat-subtext">Send a message to start the conversation!</p>
+                </div>
+              ) : (
+                messages.map(message => (
+                  <div
+                    key={message._id}
+                    className={`message ${message.sender === 'me' ? 'sent' : 'received'}`}
+                  >
+                    <div className="message-bubble">
+                      <p>{message.content}</p>
+                      <span className="message-time">{message.createdAt}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Message Input */}
+            <form className="message-input-form" onSubmit={handleSendMessage}>
+              <input
+                type="text"
+                placeholder="Type a message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="send-btn"
+                disabled={!newMessage.trim() || sending}
+              >
+                <Send size={20} />
+              </button>
+            </form>
+          </>
+        ) : (
+          <div className="no-conversation-selected">
+            <MessageCircle size={48} />
+            <h3>Select a conversation</h3>
+            <p>Choose a conversation from the sidebar to start messaging</p>
+          </div>
+        )}
+      </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="msg-toast">{toast}</div>
+      )}
+
+      <style>{`
         .messages-page {
           display: flex;
           height: calc(100vh - 5rem);
@@ -345,8 +430,32 @@ const MessagesPage = () => {
         }
 
         .sidebar-header {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
           padding: 1.5rem;
           border-bottom: 1px solid var(--border-color);
+        }
+
+        .page-back-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 2.25rem;
+          height: 2.25rem;
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border-color);
+          border-radius: 0.5rem;
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.15s ease;
+          flex-shrink: 0;
+        }
+
+        .page-back-btn:hover {
+          background: var(--bg-secondary);
+          border-color: var(--primary-500);
+          color: var(--primary-500);
         }
 
         .sidebar-header h2 {
@@ -491,6 +600,23 @@ const MessagesPage = () => {
           background: var(--bg-secondary);
         }
 
+        .empty-chat-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          color: var(--text-secondary);
+          font-size: 1.1rem;
+          text-align: center;
+        }
+
+        .empty-chat-subtext {
+          font-size: 0.9rem;
+          color: var(--text-muted);
+          margin-top: 0.5rem;
+        }
+
         .chat-header {
           display: flex;
           align-items: center;
@@ -501,12 +627,19 @@ const MessagesPage = () => {
         }
 
         .back-btn {
-          display: none;
+          display: flex;
+          align-items: center;
           background: none;
           border: none;
           color: var(--text-primary);
           cursor: pointer;
           padding: 0.5rem;
+          border-radius: 0.5rem;
+          transition: background var(--transition-fast);
+        }
+
+        .back-btn:hover {
+          background: var(--bg-tertiary);
         }
 
         .chat-user-info {
@@ -707,17 +840,81 @@ const MessagesPage = () => {
             display: none;
           }
 
-          .back-btn {
-            display: flex;
-          }
-
           .message {
             max-width: 85%;
           }
         }
+
+        /* 3-dots dropdown menu */
+        .more-menu-wrapper {
+          position: relative;
+        }
+
+        .more-menu-dropdown {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          background: var(--bg-primary);
+          border: 1px solid var(--border-color);
+          border-radius: 0.75rem;
+          box-shadow: 0 8px 24px var(--shadow-color);
+          z-index: 100;
+          min-width: 180px;
+          overflow: hidden;
+          animation: menuSlideDown 0.2s ease;
+        }
+
+        @keyframes menuSlideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .more-menu-dropdown button {
+          display: block;
+          width: 100%;
+          padding: 0.75rem 1rem;
+          background: none;
+          border: none;
+          text-align: left;
+          font-size: 0.875rem;
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+
+        .more-menu-dropdown button:hover {
+          background: var(--bg-tertiary);
+        }
+
+        .more-menu-dropdown button:not(:last-child) {
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Toast Notification */
+        .msg-toast {
+          position: fixed;
+          bottom: 2rem;
+          left: 50%;
+          transform: translateX(-50%);
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          padding: 0.75rem 1.5rem;
+          border-radius: 9999px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          box-shadow: 0 8px 24px var(--shadow-color);
+          border: 1px solid var(--border-color);
+          z-index: 999;
+          animation: toastFadeIn 0.3s ease;
+        }
+
+        @keyframes toastFadeIn {
+          from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default MessagesPage;

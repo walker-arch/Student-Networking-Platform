@@ -1,5 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
+import Connection from '../models/Connection.js';
+import Message from '../models/Message.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -59,6 +61,46 @@ router.put('/profile', authenticate, async (req, res) => {
             return res.status(400).json({ message: messages.join(', ') });
         }
 
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/users/dashboard
+// @desc    Get dashboard stats for current user
+// @access  Private
+router.get('/dashboard', authenticate, async (req, res) => {
+    try {
+        // Connection count
+        const connectionCount = await Connection.countDocuments({
+            $or: [
+                { requester: req.userId, status: 'accepted' },
+                { recipient: req.userId, status: 'accepted' }
+            ]
+        });
+
+        // Unread message count
+        const unreadMessages = await Message.countDocuments({
+            receiver: req.userId,
+            read: false
+        });
+
+        // Profile views
+        const user = await User.findById(req.userId).select('profileViews');
+
+        // Pending requests received
+        const pendingRequests = await Connection.countDocuments({
+            recipient: req.userId,
+            status: 'pending'
+        });
+
+        res.json({
+            connections: connectionCount,
+            messages: unreadMessages,
+            profileViews: user?.profileViews || 0,
+            pendingRequests
+        });
+    } catch (error) {
+        console.error('Dashboard stats error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -124,6 +166,82 @@ router.get('/search', authenticate, async (req, res) => {
     }
 });
 
+// @route   PUT /api/users/mute/:userId
+// @desc    Toggle mute notifications for a user
+// @access  Private
+router.put('/mute/:userId', authenticate, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        const targetUserId = req.params.userId;
+
+        const isMuted = user.mutedUsers.some(id => id.toString() === targetUserId);
+
+        if (isMuted) {
+            await User.findByIdAndUpdate(req.userId, {
+                $pull: { mutedUsers: targetUserId }
+            });
+            res.json({ muted: false, message: 'User unmuted' });
+        } else {
+            await User.findByIdAndUpdate(req.userId, {
+                $addToSet: { mutedUsers: targetUserId }
+            });
+            res.json({ muted: true, message: 'User muted' });
+        }
+    } catch (error) {
+        console.error('Mute user error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   PUT /api/users/block/:userId
+// @desc    Toggle block a user
+// @access  Private
+router.put('/block/:userId', authenticate, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        const targetUserId = req.params.userId;
+
+        const isBlocked = user.blockedUsers.some(id => id.toString() === targetUserId);
+
+        if (isBlocked) {
+            await User.findByIdAndUpdate(req.userId, {
+                $pull: { blockedUsers: targetUserId }
+            });
+            res.json({ blocked: false, message: 'User unblocked' });
+        } else {
+            await User.findByIdAndUpdate(req.userId, {
+                $addToSet: { blockedUsers: targetUserId }
+            });
+            res.json({ blocked: true, message: 'User blocked' });
+        }
+    } catch (error) {
+        console.error('Block user error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   PUT /api/users/clear-chat/:userId
+// @desc    Clear chat with a user (client-side only, stores timestamp)
+// @access  Private
+router.put('/clear-chat/:userId', authenticate, async (req, res) => {
+    try {
+        const targetUserId = req.params.userId;
+
+        // Remove any existing cleared chat entry for this user, then add new one
+        await User.findByIdAndUpdate(req.userId, {
+            $pull: { clearedChats: { userId: targetUserId } }
+        });
+        await User.findByIdAndUpdate(req.userId, {
+            $push: { clearedChats: { userId: targetUserId, clearedAt: new Date() } }
+        });
+
+        res.json({ message: 'Chat cleared', clearedAt: new Date() });
+    } catch (error) {
+        console.error('Clear chat error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // @route   GET /api/users/:id
 // @desc    Get user by ID
 // @access  Private
@@ -133,6 +251,11 @@ router.get('/:id', authenticate, async (req, res) => {
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Increment profile views if viewing another user's profile
+        if (req.params.id !== req.userId.toString()) {
+            await User.findByIdAndUpdate(req.params.id, { $inc: { profileViews: 1 } });
         }
 
         res.json(user);

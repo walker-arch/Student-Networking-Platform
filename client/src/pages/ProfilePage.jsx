@@ -43,6 +43,10 @@ const ProfilePage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [connectionStatus, setConnectionStatus] = useState(null); // 'accepted', 'pending', null
+    const [connectionId, setConnectionId] = useState(null);
+    const [connecting, setConnecting] = useState(false);
+    const [showUnfriendModal, setShowUnfriendModal] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         bio: '',
@@ -72,6 +76,7 @@ const ProfilePage = () => {
             setLoading(false);
         } else {
             fetchUserProfile();
+            fetchConnectionStatus();
         }
     }, [userId, currentUser, isOwnProfile]);
 
@@ -85,6 +90,52 @@ const ProfilePage = () => {
             setError('Profile not found');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchConnectionStatus = async () => {
+        try {
+            const data = await api.getConnectionStatus(userId);
+            if (data.status === 'accepted' || data.status === 'pending') {
+                setConnectionStatus(data.status);
+                setConnectionId(data.connectionId || null);
+            } else {
+                setConnectionStatus(null);
+                setConnectionId(null);
+            }
+        } catch (e) {
+            console.error('Failed to check connection status:', e);
+        }
+    };
+
+    const handleUnfriend = async () => {
+        if (!connectionId) return;
+        try {
+            await api.removeConnection(connectionId);
+            setConnectionStatus(null);
+            setConnectionId(null);
+            setShowUnfriendModal(false);
+        } catch (error) {
+            console.error('Failed to remove connection:', error);
+            setShowUnfriendModal(false);
+        }
+    };
+
+    const handleConnect = async () => {
+        setConnecting(true);
+        try {
+            await api.sendConnectionRequest(userId);
+            setConnectionStatus('pending');
+        } catch (error) {
+            console.error('Connection request failed:', error);
+            // If already connected or pending, update status
+            if (error.message?.includes('Already connected')) {
+                setConnectionStatus('accepted');
+            } else if (error.message?.includes('pending')) {
+                setConnectionStatus('pending');
+            }
+        } finally {
+            setConnecting(false);
         }
     };
 
@@ -274,14 +325,35 @@ const ProfilePage = () => {
                                 )
                             ) : (
                                 <>
-                                    <button className="btn btn-ghost">
-                                        <MessageCircle size={18} />
-                                        Message
-                                    </button>
-                                    <button className="btn btn-primary">
-                                        <UserPlus size={18} />
-                                        Connect
-                                    </button>
+                                    {connectionStatus === 'accepted' && (
+                                        <button
+                                            className="btn btn-ghost"
+                                            onClick={() => navigate(`/messages/${userId}`)}
+                                        >
+                                            <MessageCircle size={18} />
+                                            Message
+                                        </button>
+                                    )}
+                                    {connectionStatus === 'accepted' ? (
+                                        <button className="btn btn-primary" onClick={() => setShowUnfriendModal(true)}>
+                                            <UserCheck size={18} />
+                                            Connected
+                                        </button>
+                                    ) : connectionStatus === 'pending' ? (
+                                        <button className="btn btn-outline" disabled>
+                                            <UserPlus size={18} />
+                                            Pending
+                                        </button>
+                                    ) : (
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={handleConnect}
+                                            disabled={connecting}
+                                        >
+                                            {connecting ? <Loader size={18} className="animate-spin" /> : <UserPlus size={18} />}
+                                            Connect
+                                        </button>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -418,6 +490,25 @@ const ProfilePage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Unfriend Confirmation Modal */}
+            {showUnfriendModal && (
+                <div className="modal-overlay" onClick={() => setShowUnfriendModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-icon">⚠️</div>
+                        <h3>Remove Connection</h3>
+                        <p>Do you want to unfriend <strong>{profileUser?.name}</strong>? You will no longer be connected.</p>
+                        <div className="modal-actions">
+                            <button className="btn btn-ghost" onClick={() => setShowUnfriendModal(false)}>
+                                No, Keep
+                            </button>
+                            <button className="btn btn-danger" onClick={handleUnfriend}>
+                                Yes, Unfriend
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style>{`
         .profile-page {
@@ -647,6 +738,78 @@ const ProfilePage = () => {
             width: 100%;
             justify-content: center;
           }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .modal-content {
+          background: var(--bg-primary);
+          border: 1px solid var(--border-color);
+          border-radius: 1rem;
+          padding: 2rem;
+          max-width: 400px;
+          width: 90%;
+          text-align: center;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          animation: modalSlideUp 0.3s ease;
+        }
+
+        @keyframes modalSlideUp {
+          from { opacity: 0; transform: translateY(20px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-icon {
+          font-size: 2.5rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .modal-content h3 {
+          font-size: 1.25rem;
+          margin-bottom: 0.5rem;
+          color: var(--text-primary);
+        }
+
+        .modal-content p {
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+          margin-bottom: 1.5rem;
+          line-height: 1.5;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 0.75rem;
+          justify-content: center;
+        }
+
+        .btn-danger {
+          background: linear-gradient(135deg, #dc2626, #b91c1c);
+          color: white;
+          border: none;
+        }
+
+        .btn-danger:hover {
+          background: linear-gradient(135deg, #b91c1c, #991b1b);
         }
       `}</style>
         </div>

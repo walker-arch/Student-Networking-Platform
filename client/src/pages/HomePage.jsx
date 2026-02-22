@@ -1,156 +1,158 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import api from '../services/api';
 import {
-    Users,
-    Search,
-    MessageCircle,
-    Sparkles,
-    ArrowRight,
-    Target,
-    Zap,
-    Shield
+  Users,
+  Search,
+  MessageCircle,
+  Sparkles,
+  ArrowRight,
+  Target,
+  Zap,
+  Shield
 } from 'lucide-react';
 
 const HomePage = () => {
-    const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
-    if (isAuthenticated) {
-        return <AuthenticatedHome user={user} />;
-    }
+  if (isAuthenticated) {
+    return <AuthenticatedHome user={user} />;
+  }
 
-    return <GuestHome />;
+  return <GuestHome />;
 };
 
 const GuestHome = () => {
-    return (
-        <div className="guest-home">
-            {/* Hero Section */}
-            <section className="hero">
-                <div className="container">
-                    <div className="hero-content">
-                        <div className="hero-badge animate-fadeIn">
-                            <Sparkles size={16} />
-                            <span>Smart Student Networking</span>
-                        </div>
-                        <h1 className="hero-title animate-slideUp">
-                            Connect with <span className="gradient-text">Like-minded Students</span> Worldwide
-                        </h1>
-                        <p className="hero-description animate-slideUp">
-                            Find the perfect teammates for projects, hackathons, research, and startups.
-                            Our intelligent matching connects you with students who share your interests and goals.
-                        </p>
-                        <div className="hero-actions animate-slideUp">
-                            <Link to="/signup" className="btn btn-primary btn-lg">
-                                Get Started Free
-                                <ArrowRight size={20} />
-                            </Link>
-                            <Link to="/login" className="btn btn-outline btn-lg">
-                                Sign In
-                            </Link>
-                        </div>
-                        <div className="hero-stats">
-                            <div className="stat">
-                                <span className="stat-number">10K+</span>
-                                <span className="stat-label">Students</span>
-                            </div>
-                            <div className="stat-divider" />
-                            <div className="stat">
-                                <span className="stat-number">500+</span>
-                                <span className="stat-label">Colleges</span>
-                            </div>
-                            <div className="stat-divider" />
-                            <div className="stat">
-                                <span className="stat-number">5K+</span>
-                                <span className="stat-label">Connections</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="hero-visual">
-                        <div className="visual-card card-1 animate-fadeIn">
-                            <div className="mini-avatar">🎓</div>
-                            <div>
-                                <strong>Sarah</strong>
-                                <p>ML Enthusiast</p>
-                            </div>
-                        </div>
-                        <div className="visual-card card-2 animate-fadeIn">
-                            <div className="mini-avatar">💻</div>
-                            <div>
-                                <strong>Alex</strong>
-                                <p>Full Stack Dev</p>
-                            </div>
-                        </div>
-                        <div className="visual-card card-3 animate-fadeIn">
-                            <div className="mini-avatar">🚀</div>
-                            <div>
-                                <strong>Mike</strong>
-                                <p>Startup Founder</p>
-                            </div>
-                        </div>
-                        <div className="connection-line line-1" />
-                        <div className="connection-line line-2" />
-                        <div className="center-circle">
-                            <span>You</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
+  return (
+    <div className="guest-home">
+      {/* Hero Section */}
+      <section className="hero">
+        <div className="container">
+          <div className="hero-content">
+            <div className="hero-badge animate-fadeIn">
+              <Sparkles size={16} />
+              <span>Smart Student Networking</span>
+            </div>
+            <h1 className="hero-title animate-slideUp">
+              Connect with <span className="gradient-text">Like-minded Students</span> Worldwide
+            </h1>
+            <p className="hero-description animate-slideUp">
+              Find the perfect teammates for projects, hackathons, research, and startups.
+              Our intelligent matching connects you with students who share your interests and goals.
+            </p>
+            <div className="hero-actions animate-slideUp">
+              <Link to="/signup" className="btn btn-primary btn-lg">
+                Get Started Free
+                <ArrowRight size={20} />
+              </Link>
+              <Link to="/login" className="btn btn-outline btn-lg">
+                Sign In
+              </Link>
+            </div>
+            <div className="hero-stats">
+              <div className="stat">
+                <span className="stat-number">10K+</span>
+                <span className="stat-label">Students</span>
+              </div>
+              <div className="stat-divider" />
+              <div className="stat">
+                <span className="stat-number">500+</span>
+                <span className="stat-label">Colleges</span>
+              </div>
+              <div className="stat-divider" />
+              <div className="stat">
+                <span className="stat-number">5K+</span>
+                <span className="stat-label">Connections</span>
+              </div>
+            </div>
+          </div>
+          <div className="hero-visual">
+            <div className="visual-card card-1 animate-fadeIn">
+              <div className="mini-avatar">🎓</div>
+              <div>
+                <strong>Sarah</strong>
+                <p>ML Enthusiast</p>
+              </div>
+            </div>
+            <div className="visual-card card-2 animate-fadeIn">
+              <div className="mini-avatar">💻</div>
+              <div>
+                <strong>Alex</strong>
+                <p>Full Stack Dev</p>
+              </div>
+            </div>
+            <div className="visual-card card-3 animate-fadeIn">
+              <div className="mini-avatar">🚀</div>
+              <div>
+                <strong>Mike</strong>
+                <p>Startup Founder</p>
+              </div>
+            </div>
+            <div className="connection-line line-1" />
+            <div className="connection-line line-2" />
+            <div className="center-circle">
+              <span>You</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Features Section */}
-            <section className="features">
-                <div className="container">
-                    <div className="section-header">
-                        <h2>Why Choose <span className="gradient-text">StudentNet</span>?</h2>
-                        <p>Everything you need to build your academic and professional network</p>
-                    </div>
-                    <div className="features-grid">
-                        <div className="feature-card card hover-lift">
-                            <div className="feature-icon-wrapper">
-                                <Target size={28} />
-                            </div>
-                            <h3>Interest-Based Matching</h3>
-                            <p>Our algorithm finds students with similar interests, skills, and career goals.</p>
-                        </div>
-                        <div className="feature-card card hover-lift">
-                            <div className="feature-icon-wrapper secondary">
-                                <Zap size={28} />
-                            </div>
-                            <h3>Smart Recommendations</h3>
-                            <p>Get personalized suggestions based on your profile and activity patterns.</p>
-                        </div>
-                        <div className="feature-card card hover-lift">
-                            <div className="feature-icon-wrapper accent">
-                                <MessageCircle size={28} />
-                            </div>
-                            <h3>Seamless Communication</h3>
-                            <p>Connect and chat with potential collaborators directly on the platform.</p>
-                        </div>
-                        <div className="feature-card card hover-lift">
-                            <div className="feature-icon-wrapper">
-                                <Shield size={28} />
-                            </div>
-                            <h3>Student-Only Network</h3>
-                            <p>A secure environment exclusively for verified students and academics.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+      {/* Features Section */}
+      <section className="features">
+        <div className="container">
+          <div className="section-header">
+            <h2>Why Choose <span className="gradient-text">StudentNet</span>?</h2>
+            <p>Everything you need to build your academic and professional network</p>
+          </div>
+          <div className="features-grid">
+            <div className="feature-card card hover-lift">
+              <div className="feature-icon-wrapper">
+                <Target size={28} />
+              </div>
+              <h3>Interest-Based Matching</h3>
+              <p>Our algorithm finds students with similar interests, skills, and career goals.</p>
+            </div>
+            <div className="feature-card card hover-lift">
+              <div className="feature-icon-wrapper secondary">
+                <Zap size={28} />
+              </div>
+              <h3>Smart Recommendations</h3>
+              <p>Get personalized suggestions based on your profile and activity patterns.</p>
+            </div>
+            <div className="feature-card card hover-lift">
+              <div className="feature-icon-wrapper accent">
+                <MessageCircle size={28} />
+              </div>
+              <h3>Seamless Communication</h3>
+              <p>Connect and chat with potential collaborators directly on the platform.</p>
+            </div>
+            <div className="feature-card card hover-lift">
+              <div className="feature-icon-wrapper">
+                <Shield size={28} />
+              </div>
+              <h3>Student-Only Network</h3>
+              <p>A secure environment exclusively for verified students and academics.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-            {/* CTA Section */}
-            <section className="cta">
-                <div className="container">
-                    <div className="cta-card">
-                        <h2>Ready to Find Your Perfect Match?</h2>
-                        <p>Join thousands of students already networking on StudentNet</p>
-                        <Link to="/signup" className="btn btn-primary btn-lg">
-                            Create Free Account
-                            <ArrowRight size={20} />
-                        </Link>
-                    </div>
-                </div>
-            </section>
+      {/* CTA Section */}
+      <section className="cta">
+        <div className="container">
+          <div className="cta-card">
+            <h2>Ready to Find Your Perfect Match?</h2>
+            <p>Join thousands of students already networking on StudentNet</p>
+            <Link to="/signup" className="btn btn-primary btn-lg">
+              Create Free Account
+              <ArrowRight size={20} />
+            </Link>
+          </div>
+        </div>
+      </section>
 
-            <style>{`
+      <style>{`
         .guest-home {
           overflow-x: hidden;
         }
@@ -481,99 +483,111 @@ const GuestHome = () => {
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 const AuthenticatedHome = ({ user }) => {
-    return (
-        <div className="container">
-            <div className="dashboard">
-                <div className="welcome-section animate-fadeIn">
-                    <h1>Welcome back, <span className="gradient-text">{user?.name?.split(' ')[0] || 'Student'}</span>! 👋</h1>
-                    <p>Here's what's happening in your network</p>
-                </div>
+  const [stats, setStats] = useState({ connections: 0, messages: 0, profileViews: 0, pendingRequests: 0 });
 
-                <div className="dashboard-grid">
-                    {/* Quick Stats */}
-                    <div className="quick-stats">
-                        <div className="stat-card card">
-                            <div className="stat-icon">
-                                <Users size={24} />
-                            </div>
-                            <div className="stat-info">
-                                <span className="stat-value">{user?.connections?.length || 0}</span>
-                                <span className="stat-label">Connections</span>
-                            </div>
-                        </div>
-                        <div className="stat-card card">
-                            <div className="stat-icon secondary">
-                                <MessageCircle size={24} />
-                            </div>
-                            <div className="stat-info">
-                                <span className="stat-value">5</span>
-                                <span className="stat-label">Messages</span>
-                            </div>
-                        </div>
-                        <div className="stat-card card">
-                            <div className="stat-icon accent">
-                                <Search size={24} />
-                            </div>
-                            <div className="stat-info">
-                                <span className="stat-value">12</span>
-                                <span className="stat-label">Profile Views</span>
-                            </div>
-                        </div>
-                    </div>
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await api.getDashboardStats();
+        setStats(data);
+      } catch (e) { /* silent */ }
+    };
+    fetchStats();
+  }, []);
 
-                    {/* Quick Actions */}
-                    <div className="quick-actions card">
-                        <h3>Quick Actions</h3>
-                        <div className="action-buttons">
-                            <Link to="/discover" className="action-btn">
-                                <Search size={20} />
-                                <span>Discover Students</span>
-                            </Link>
-                            <Link to="/connections" className="action-btn">
-                                <Users size={20} />
-                                <span>View Connections</span>
-                            </Link>
-                            <Link to="/messages" className="action-btn">
-                                <MessageCircle size={20} />
-                                <span>Messages</span>
-                            </Link>
-                            <Link to="/profile" className="action-btn">
-                                <Sparkles size={20} />
-                                <span>Edit Profile</span>
-                            </Link>
-                        </div>
-                    </div>
+  return (
+    <div className="container">
+      <div className="dashboard">
+        <div className="welcome-section animate-fadeIn">
+          <h1>Welcome back, <span className="gradient-text">{user?.name?.split(' ')[0] || 'Student'}</span>! 👋</h1>
+          <p>Here's what's happening in your network</p>
+        </div>
 
-                    {/* Your Interests */}
-                    <div className="interests-card card">
-                        <h3>Your Interests</h3>
-                        <div className="interests-tags">
-                            {user?.interests?.slice(0, 6).map((interest, idx) => (
-                                <span key={idx} className="badge">{interest}</span>
-                            )) || <p className="no-data">No interests added yet</p>}
-                        </div>
-                        <Link to="/profile" className="edit-link">Edit interests →</Link>
-                    </div>
-
-                    {/* Your Skills */}
-                    <div className="skills-card card">
-                        <h3>Your Skills</h3>
-                        <div className="skills-tags">
-                            {user?.skills?.slice(0, 6).map((skill, idx) => (
-                                <span key={idx} className="badge badge-secondary">{skill}</span>
-                            )) || <p className="no-data">No skills added yet</p>}
-                        </div>
-                        <Link to="/profile" className="edit-link">Edit skills →</Link>
-                    </div>
-                </div>
+        <div className="dashboard-grid">
+          {/* Quick Stats */}
+          <div className="quick-stats">
+            <div className="stat-card card">
+              <div className="stat-icon">
+                <Users size={24} />
+              </div>
+              <div className="stat-info">
+                <span className="stat-value">{stats.connections}</span>
+                <span className="stat-label">Connections</span>
+              </div>
             </div>
+            <div className="stat-card card">
+              <div className="stat-icon secondary">
+                <MessageCircle size={24} />
+              </div>
+              <div className="stat-info">
+                <span className="stat-value">{stats.messages}</span>
+                <span className="stat-label">Messages</span>
+              </div>
+            </div>
+            <div className="stat-card card">
+              <div className="stat-icon accent">
+                <Search size={24} />
+              </div>
+              <div className="stat-info">
+                <span className="stat-value">{stats.profileViews}</span>
+                <span className="stat-label">Profile Views</span>
+              </div>
+            </div>
+          </div>
 
-            <style>{`
+          {/* Quick Actions */}
+          <div className="quick-actions card">
+            <h3>Quick Actions</h3>
+            <div className="action-buttons">
+              <Link to="/discover" className="action-btn">
+                <Search size={20} />
+                <span>Discover Students</span>
+              </Link>
+              <Link to="/connections" className="action-btn">
+                <Users size={20} />
+                <span>View Connections</span>
+              </Link>
+              <Link to="/messages" className="action-btn">
+                <MessageCircle size={20} />
+                <span>Messages</span>
+              </Link>
+              <Link to="/profile" className="action-btn">
+                <Sparkles size={20} />
+                <span>Edit Profile</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Your Interests */}
+          <div className="interests-card card">
+            <h3>Your Interests</h3>
+            <div className="interests-tags">
+              {user?.interests?.slice(0, 6).map((interest, idx) => (
+                <span key={idx} className="badge">{interest}</span>
+              )) || <p className="no-data">No interests added yet</p>}
+            </div>
+            <Link to="/profile" className="edit-link">Edit interests →</Link>
+          </div>
+
+          {/* Your Skills */}
+          <div className="skills-card card">
+            <h3>Your Skills</h3>
+            <div className="skills-tags">
+              {user?.skills?.slice(0, 6).map((skill, idx) => (
+                <span key={idx} className="badge badge-secondary">{skill}</span>
+              )) || <p className="no-data">No skills added yet</p>}
+            </div>
+            <Link to="/profile" className="edit-link">Edit skills →</Link>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
         .dashboard {
           padding: 1rem 0;
         }
@@ -738,8 +752,8 @@ const AuthenticatedHome = ({ user }) => {
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default HomePage;

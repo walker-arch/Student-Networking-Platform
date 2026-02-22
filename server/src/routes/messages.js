@@ -1,6 +1,8 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -10,13 +12,15 @@ const router = express.Router();
 // @access  Private
 router.get('/conversations', authenticate, async (req, res) => {
     try {
+        const userId = new mongoose.Types.ObjectId(req.userId);
+
         // Get all messages involving the current user
         const messages = await Message.aggregate([
             {
                 $match: {
                     $or: [
-                        { sender: req.userId },
-                        { receiver: req.userId }
+                        { sender: userId },
+                        { receiver: userId }
                     ]
                 }
             },
@@ -27,7 +31,7 @@ router.get('/conversations', authenticate, async (req, res) => {
                 $group: {
                     _id: {
                         $cond: [
-                            { $eq: ['$sender', req.userId] },
+                            { $eq: ['$sender', userId] },
                             '$receiver',
                             '$sender'
                         ]
@@ -38,7 +42,7 @@ router.get('/conversations', authenticate, async (req, res) => {
                             $cond: [
                                 {
                                     $and: [
-                                        { $eq: ['$receiver', req.userId] },
+                                        { $eq: ['$receiver', userId] },
                                         { $eq: ['$read', false] }
                                     ]
                                 },
@@ -64,16 +68,38 @@ router.get('/conversations', authenticate, async (req, res) => {
             userMap[u._id.toString()] = u;
         });
 
-        const conversations = messages.map(msg => ({
-            _id: msg._id.toString(),
-            user: userMap[msg._id.toString()],
-            lastMessage: {
-                content: msg.lastMessage.content,
-                createdAt: formatMessageTime(msg.lastMessage.createdAt),
-                sender: msg.lastMessage.sender.toString() === req.userId.toString() ? 'me' : msg._id.toString()
-            },
-            unread: msg.unreadCount
-        }));
+        // Get current user's cleared chats
+        const currentUser = await User.findById(userId).select('clearedChats');
+        const clearedMap = new Map();
+        if (currentUser && currentUser.clearedChats) {
+            currentUser.clearedChats.forEach(c => {
+                if (c.userId) clearedMap.set(c.userId.toString(), c.clearedAt.getTime());
+            });
+        }
+
+        const conversations = messages.map(msg => {
+            const otherUserId = msg._id.toString();
+            const clearedAtTime = clearedMap.get(otherUserId);
+
+            let lastMsg = null;
+            if (msg.lastMessage) {
+                const msgTime = new Date(msg.lastMessage.createdAt).getTime();
+                if (!clearedAtTime || msgTime > clearedAtTime) {
+                    lastMsg = {
+                        content: msg.lastMessage.content,
+                        createdAt: formatMessageTime(msg.lastMessage.createdAt),
+                        sender: msg.lastMessage.sender.toString() === req.userId.toString() ? 'me' : otherUserId
+                    };
+                }
+            }
+
+            return {
+                _id: otherUserId,
+                user: userMap[otherUserId],
+                lastMessage: lastMsg,
+                unread: msg.unreadCount
+            };
+        }).filter(conv => conv.user); // Remove if user somehow doesn't exist anymore
 
         res.json(conversations);
     } catch (error) {
@@ -89,12 +115,21 @@ router.get('/:userId', authenticate, async (req, res) => {
     try {
         const otherUserId = req.params.userId;
 
-        const messages = await Message.find({
+        const currentUser = await User.findById(req.userId).select('clearedChats');
+        const clearedChat = currentUser?.clearedChats?.find(c => c.userId?.toString() === otherUserId);
+
+        const query = {
             $or: [
                 { sender: req.userId, receiver: otherUserId },
                 { sender: otherUserId, receiver: req.userId }
             ]
-        }).sort({ createdAt: 1 });
+        };
+
+        if (clearedChat) {
+            query.createdAt = { $gt: clearedChat.clearedAt };
+        }
+
+        const messages = await Message.find(query).sort({ createdAt: 1 });
 
         // Mark messages as read
         await Message.updateMany(
@@ -135,6 +170,18 @@ router.post('/:userId', authenticate, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Check if either party has blocked the other
+        const sender = await User.findById(req.userId);
+        const senderBlocked = sender.blockedUsers?.some(id => id.toString() === receiverId);
+        const receiverBlocked = receiver.blockedUsers?.some(id => id.toString() === req.userId.toString());
+
+        if (senderBlocked) {
+            return res.status(403).json({ message: 'You have blocked this user. Unblock to send messages.' });
+        }
+        if (receiverBlocked) {
+            return res.status(403).json({ message: 'You cannot send messages to this user.' });
+        }
+
         const message = new Message({
             sender: req.userId,
             receiver: receiverId,
@@ -142,6 +189,20 @@ router.post('/:userId', authenticate, async (req, res) => {
         });
 
         await message.save();
+
+        // Create notification for receiver (skip if receiver has muted the sender)
+        try {
+            const isMuted = receiver.mutedUsers?.some(id => id.toString() === req.userId.toString());
+            if (!isMuted) {
+                await Notification.create({
+                    recipient: receiverId,
+                    sender: req.userId,
+                    type: 'new_message',
+                    message: `${sender.name} sent you a message`,
+                    relatedId: message._id
+                });
+            }
+        } catch (e) { console.error('Notification error:', e); }
 
         res.status(201).json({
             _id: message._id,

@@ -109,6 +109,10 @@ class ApiService {
         });
     }
 
+    async getConnectionStatus(userId) {
+        return this.request(`/connections/status/${userId}`);
+    }
+
     // Messages endpoints
     async getConversations() {
         return this.request('/messages/conversations');
@@ -123,6 +127,45 @@ class ApiService {
             method: 'POST',
             body: JSON.stringify({ content }),
         });
+    }
+
+    // User interaction endpoints
+    async muteUser(userId) {
+        return this.request(`/users/mute/${userId}`, { method: 'PUT' });
+    }
+
+    async blockUser(userId) {
+        return this.request(`/users/block/${userId}`, { method: 'PUT' });
+    }
+
+    async clearChat(userId) {
+        return this.request(`/users/clear-chat/${userId}`, { method: 'PUT' });
+    }
+
+    // Notification endpoints
+    async getNotifications() {
+        return this.request('/notifications');
+    }
+
+    async getUnreadCount() {
+        return this.request('/notifications/unread-count');
+    }
+
+    async markNotificationRead(id) {
+        return this.request(`/notifications/${id}/read`, {
+            method: 'PUT',
+        });
+    }
+
+    async markAllNotificationsRead() {
+        return this.request('/notifications/read-all', {
+            method: 'PUT',
+        });
+    }
+
+    // Dashboard endpoints
+    async getDashboardStats() {
+        return this.request('/users/dashboard');
     }
 }
 

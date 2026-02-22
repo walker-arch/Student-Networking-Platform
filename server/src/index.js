@@ -9,6 +9,7 @@ import userRoutes from './routes/users.js';
 import connectionRoutes from './routes/connections.js';
 import messageRoutes from './routes/messages.js';
 import recommendationRoutes from './routes/recommendations.js';
+import notificationRoutes from './routes/notifications.js';
 
 // Load environment variables
 dotenv.config();
@@ -43,6 +44,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/connections', connectionRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
