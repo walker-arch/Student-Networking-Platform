@@ -1,0 +1,656 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+import {
+    User,
+    Mail,
+    Building,
+    GraduationCap,
+    Calendar,
+    Edit3,
+    Save,
+    X,
+    Camera,
+    Loader,
+    MessageCircle,
+    UserPlus,
+    UserCheck
+} from 'lucide-react';
+
+const INTERESTS = [
+    'Artificial Intelligence', 'Machine Learning', 'Web Development', 'Mobile Apps',
+    'Data Science', 'Cybersecurity', 'Cloud Computing', 'Blockchain',
+    'Game Development', 'UI/UX Design', 'DevOps', 'IoT',
+    'Robotics', 'AR/VR', 'Open Source', 'Competitive Programming',
+    'Startups', 'Research', 'Networking', 'Public Speaking'
+];
+
+const SKILLS = [
+    'JavaScript', 'Python', 'Java', 'C++', 'React', 'Node.js',
+    'TypeScript', 'Go', 'Rust', 'Swift', 'Kotlin', 'SQL',
+    'MongoDB', 'Docker', 'Kubernetes', 'AWS', 'Git', 'Linux',
+    'TensorFlow', 'PyTorch', 'Figma', 'Adobe XD'
+];
+
+const ProfilePage = () => {
+    const { userId } = useParams();
+    const { user: currentUser, updateProfile, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+
+    const [profileUser, setProfileUser] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const [formData, setFormData] = useState({
+        name: '',
+        bio: '',
+        college: '',
+        course: '',
+        year: '',
+        interests: [],
+        skills: []
+    });
+
+    const isOwnProfile = !userId || userId === currentUser?._id;
+
+    useEffect(() => {
+        if (isOwnProfile) {
+            setProfileUser(currentUser);
+            if (currentUser) {
+                setFormData({
+                    name: currentUser.name || '',
+                    bio: currentUser.bio || '',
+                    college: currentUser.college || '',
+                    course: currentUser.course || '',
+                    year: currentUser.year?.toString() || '',
+                    interests: currentUser.interests || [],
+                    skills: currentUser.skills || []
+                });
+            }
+            setLoading(false);
+        } else {
+            fetchUserProfile();
+        }
+    }, [userId, currentUser, isOwnProfile]);
+
+    const fetchUserProfile = async () => {
+        setLoading(true);
+        try {
+            const data = await api.getUserById(userId);
+            setProfileUser(data);
+        } catch (error) {
+            console.error('Failed to fetch profile:', error);
+            setError('Profile not found');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const toggleItem = (field, item) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: prev[field].includes(item)
+                ? prev[field].filter(i => i !== item)
+                : [...prev[field], item]
+        }));
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        setError('');
+        try {
+            await updateProfile({
+                ...formData,
+                year: parseInt(formData.year)
+            });
+            setIsEditing(false);
+        } catch (error) {
+            setError(error.message || 'Failed to update profile');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setFormData({
+            name: currentUser.name || '',
+            bio: currentUser.bio || '',
+            college: currentUser.college || '',
+            course: currentUser.course || '',
+            year: currentUser.year?.toString() || '',
+            interests: currentUser.interests || [],
+            skills: currentUser.skills || []
+        });
+        setIsEditing(false);
+        setError('');
+    };
+
+    if (loading) {
+        return (
+            <div className="loading-container">
+                <Loader size={40} className="animate-spin" />
+                <p>Loading profile...</p>
+                <style>{`
+          .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            color: var(--text-muted);
+          }
+        `}</style>
+            </div>
+        );
+    }
+
+    if (error && !profileUser) {
+        return (
+            <div className="error-container container">
+                <div className="error-card card">
+                    <User size={48} />
+                    <h2>Profile Not Found</h2>
+                    <p>The profile you're looking for doesn't exist.</p>
+                    <button className="btn btn-primary" onClick={() => navigate(-1)}>
+                        Go Back
+                    </button>
+                </div>
+                <style>{`
+          .error-container {
+            padding: 4rem 0;
+          }
+          .error-card {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 3rem;
+          }
+          .error-card h2 {
+            margin: 1rem 0 0.5rem;
+          }
+          .error-card p {
+            margin-bottom: 1.5rem;
+          }
+        `}</style>
+            </div>
+        );
+    }
+
+    const displayUser = isEditing ? { ...profileUser, ...formData } : profileUser;
+
+    return (
+        <div className="container">
+            <div className="profile-page">
+                {error && (
+                    <div className="error-alert animate-slideDown">
+                        <span>{error}</span>
+                        <button onClick={() => setError('')}><X size={16} /></button>
+                    </div>
+                )}
+
+                {/* Profile Header */}
+                <div className="profile-header card">
+                    <div className="header-background" />
+                    <div className="header-content">
+                        <div className="avatar-section">
+                            <div className="profile-avatar">
+                                {displayUser?.avatar ? (
+                                    <img src={displayUser.avatar} alt={displayUser.name} />
+                                ) : (
+                                    <span>{displayUser?.name?.charAt(0) || 'U'}</span>
+                                )}
+                                {isOwnProfile && isEditing && (
+                                    <button className="avatar-edit-btn">
+                                        <Camera size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="header-info">
+                            {isEditing ? (
+                                <input
+                                    type="text"
+                                    name="name"
+                                    className="input name-input"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    placeholder="Your name"
+                                />
+                            ) : (
+                                <h1 className="profile-name">{displayUser?.name}</h1>
+                            )}
+
+                            <div className="profile-meta">
+                                <span className="meta-item">
+                                    <Mail size={16} />
+                                    {displayUser?.email}
+                                </span>
+                                {displayUser?.college && (
+                                    <span className="meta-item">
+                                        <Building size={16} />
+                                        {displayUser?.college}
+                                    </span>
+                                )}
+                                {displayUser?.course && (
+                                    <span className="meta-item">
+                                        <GraduationCap size={16} />
+                                        {displayUser?.course}
+                                        {displayUser?.year && ` • Year ${displayUser.year}`}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="header-actions">
+                            {isOwnProfile ? (
+                                isEditing ? (
+                                    <>
+                                        <button className="btn btn-ghost" onClick={handleCancel}>
+                                            <X size={18} />
+                                            Cancel
+                                        </button>
+                                        <button
+                                            className="btn btn-primary"
+                                            onClick={handleSave}
+                                            disabled={saving}
+                                        >
+                                            {saving ? <Loader size={18} className="animate-spin" /> : <Save size={18} />}
+                                            Save Changes
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
+                                        <Edit3 size={18} />
+                                        Edit Profile
+                                    </button>
+                                )
+                            ) : (
+                                <>
+                                    <button className="btn btn-ghost">
+                                        <MessageCircle size={18} />
+                                        Message
+                                    </button>
+                                    <button className="btn btn-primary">
+                                        <UserPlus size={18} />
+                                        Connect
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Profile Content */}
+                <div className="profile-grid">
+                    {/* Left Column - About */}
+                    <div className="profile-column">
+                        <div className="profile-section card">
+                            <h2 className="section-title">About</h2>
+                            {isEditing ? (
+                                <textarea
+                                    name="bio"
+                                    className="input textarea"
+                                    value={formData.bio}
+                                    onChange={handleChange}
+                                    placeholder="Tell us about yourself..."
+                                    rows={4}
+                                />
+                            ) : (
+                                <p className="bio-text">
+                                    {displayUser?.bio || 'No bio yet.'}
+                                </p>
+                            )}
+                        </div>
+
+                        {isEditing && (
+                            <div className="profile-section card">
+                                <h2 className="section-title">Academic Info</h2>
+                                <div className="form-fields">
+                                    <div className="input-group">
+                                        <label>College/University</label>
+                                        <input
+                                            type="text"
+                                            name="college"
+                                            className="input"
+                                            value={formData.college}
+                                            onChange={handleChange}
+                                            placeholder="Enter your college"
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Course/Program</label>
+                                        <input
+                                            type="text"
+                                            name="course"
+                                            className="input"
+                                            value={formData.course}
+                                            onChange={handleChange}
+                                            placeholder="e.g., B.Tech Computer Science"
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Year</label>
+                                        <select
+                                            name="year"
+                                            className="input"
+                                            value={formData.year}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">Select year</option>
+                                            <option value="1">1st Year</option>
+                                            <option value="2">2nd Year</option>
+                                            <option value="3">3rd Year</option>
+                                            <option value="4">4th Year</option>
+                                            <option value="5">5th Year</option>
+                                            <option value="6">Postgraduate</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Right Column - Interests & Skills */}
+                    <div className="profile-column">
+                        <div className="profile-section card">
+                            <h2 className="section-title">Interests</h2>
+                            {isEditing ? (
+                                <div className="tag-selector">
+                                    {INTERESTS.map(interest => (
+                                        <button
+                                            key={interest}
+                                            type="button"
+                                            className={`tag-btn ${formData.interests.includes(interest) ? 'selected' : ''}`}
+                                            onClick={() => toggleItem('interests', interest)}
+                                        >
+                                            {interest}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="tags-display">
+                                    {displayUser?.interests?.length > 0 ? (
+                                        displayUser.interests.map((interest, idx) => (
+                                            <span key={idx} className="badge">{interest}</span>
+                                        ))
+                                    ) : (
+                                        <p className="no-data">No interests added yet</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="profile-section card">
+                            <h2 className="section-title">Skills</h2>
+                            {isEditing ? (
+                                <div className="tag-selector">
+                                    {SKILLS.map(skill => (
+                                        <button
+                                            key={skill}
+                                            type="button"
+                                            className={`tag-btn ${formData.skills.includes(skill) ? 'selected' : ''}`}
+                                            onClick={() => toggleItem('skills', skill)}
+                                        >
+                                            {skill}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="tags-display">
+                                    {displayUser?.skills?.length > 0 ? (
+                                        displayUser.skills.map((skill, idx) => (
+                                            <span key={idx} className="badge badge-secondary">{skill}</span>
+                                        ))
+                                    ) : (
+                                        <p className="no-data">No skills added yet</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>{`
+        .profile-page {
+          padding: 1rem 0;
+          max-width: 900px;
+          margin: 0 auto;
+        }
+
+        .error-alert {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1rem;
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 0.5rem;
+          color: #dc2626;
+          margin-bottom: 1.5rem;
+        }
+
+        .dark .error-alert {
+          background: rgba(220, 38, 38, 0.1);
+          border-color: rgba(220, 38, 38, 0.3);
+        }
+
+        .error-alert button {
+          background: none;
+          border: none;
+          color: inherit;
+          cursor: pointer;
+        }
+
+        /* Profile Header */
+        .profile-header {
+          position: relative;
+          overflow: hidden;
+          padding: 0;
+          margin-bottom: 1.5rem;
+        }
+
+        .header-background {
+          height: 120px;
+          background: linear-gradient(135deg, var(--primary-500), var(--secondary-500));
+        }
+
+        .header-content {
+          display: flex;
+          align-items: flex-end;
+          gap: 1.5rem;
+          padding: 0 2rem 2rem;
+          margin-top: -3rem;
+          flex-wrap: wrap;
+        }
+
+        .avatar-section {
+          flex-shrink: 0;
+        }
+
+        .profile-avatar {
+          width: 8rem;
+          height: 8rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: linear-gradient(135deg, var(--primary-600), var(--secondary-600));
+          border-radius: 9999px;
+          font-size: 3rem;
+          font-weight: 700;
+          color: white;
+          border: 4px solid var(--bg-primary);
+          box-shadow: 0 4px 20px var(--shadow-color);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .profile-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .avatar-edit-btn {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          padding: 0.5rem;
+          background: rgba(0,0,0,0.6);
+          border: none;
+          color: white;
+          cursor: pointer;
+        }
+
+        .header-info {
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .profile-name {
+          font-size: 1.75rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .name-input {
+          font-size: 1.5rem;
+          font-weight: 700;
+          padding: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .profile-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.875rem;
+          color: var(--text-muted);
+        }
+
+        .header-actions {
+          display: flex;
+          gap: 0.75rem;
+        }
+
+        /* Profile Grid */
+        .profile-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+        }
+
+        .profile-section {
+          margin-bottom: 1.5rem;
+        }
+
+        .profile-section:last-child {
+          margin-bottom: 0;
+        }
+
+        .section-title {
+          font-size: 1rem;
+          margin-bottom: 1rem;
+          padding-bottom: 0.75rem;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .bio-text {
+          color: var(--text-secondary);
+          line-height: 1.7;
+        }
+
+        .textarea {
+          resize: vertical;
+          min-height: 100px;
+        }
+
+        .form-fields {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .tags-display {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+
+        .tag-selector {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          max-height: 200px;
+          overflow-y: auto;
+          padding-right: 0.5rem;
+        }
+
+        .tag-btn {
+          padding: 0.375rem 0.75rem;
+          font-size: 0.8rem;
+          background: var(--bg-tertiary);
+          border: 2px solid var(--border-color);
+          border-radius: 9999px;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .tag-btn:hover {
+          border-color: var(--primary-500);
+          color: var(--primary-500);
+        }
+
+        .tag-btn.selected {
+          background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+          border-color: transparent;
+          color: white;
+        }
+
+        .no-data {
+          color: var(--text-muted);
+          font-size: 0.875rem;
+          font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+          .profile-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .header-content {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+          }
+
+          .profile-meta {
+            justify-content: center;
+          }
+
+          .header-actions {
+            width: 100%;
+            justify-content: center;
+          }
+        }
+      `}</style>
+        </div>
+    );
+};
+
+export default ProfilePage;
