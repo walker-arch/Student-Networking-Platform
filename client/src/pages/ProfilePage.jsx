@@ -17,7 +17,8 @@ import {
     UserPlus,
     UserCheck,
     MapPin,
-    Ban
+    Ban,
+    Users
 } from 'lucide-react';
 
 const INTERESTS = [
@@ -371,6 +372,12 @@ const ProfilePage = () => {
                                         {displayUser?.year && ` • Year ${displayUser.year}`}
                                     </span>
                                 )}
+                                {displayUser?.connections && (
+                                    <span className="meta-item">
+                                        <Users size={16} />
+                                        {displayUser.connections.length} Connection{displayUser.connections.length !== 1 ? 's' : ''}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -392,7 +399,7 @@ const ProfilePage = () => {
                                         </button>
                                     </>
                                 ) : (
-                                    <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
+                                    <button className="btn action-btn-connect" onClick={() => setIsEditing(true)}>
                                         <Edit3 size={18} />
                                         Edit Profile
                                     </button>
@@ -401,7 +408,7 @@ const ProfilePage = () => {
                                 <>
                                     {connectionStatus === 'accepted' && (
                                         <button
-                                            className="btn btn-ghost"
+                                            className="btn action-btn-message"
                                             onClick={() => navigate(`/messages/${userId}`)}
                                         >
                                             <MessageCircle size={18} />
@@ -409,18 +416,18 @@ const ProfilePage = () => {
                                         </button>
                                     )}
                                     {connectionStatus === 'accepted' ? (
-                                        <button className="btn btn-primary" onClick={() => setShowUnfriendModal(true)}>
+                                        <button className="btn action-btn-connected" onClick={() => setShowUnfriendModal(true)}>
                                             <UserCheck size={18} />
                                             Connected
                                         </button>
                                     ) : connectionStatus === 'pending' ? (
-                                        <button className="btn btn-outline" disabled>
+                                        <button className="btn action-btn-pending" disabled>
                                             <UserPlus size={18} />
                                             Pending
                                         </button>
                                     ) : (
                                         <button
-                                            className="btn btn-primary"
+                                            className="btn action-btn-connect"
                                             onClick={handleConnect}
                                             disabled={connecting}
                                         >
@@ -429,7 +436,7 @@ const ProfilePage = () => {
                                         </button>
                                     )}
                                     <button
-                                        className={`btn ${isBlocked ? 'btn-danger' : 'btn-outline'}`}
+                                        className={`btn ${isBlocked ? 'action-btn-danger-active' : 'action-btn-danger'}`}
                                         onClick={handleBlockUser}
                                     >
                                         <Ban size={18} />
@@ -582,6 +589,63 @@ const ProfilePage = () => {
                     </div>
                 </div>
 
+                {/* Connections Section */}
+                {isOwnProfile && displayUser?.connections?.length > 0 && (
+                    <div className="profile-section card mt-4" style={{ marginTop: '1.5rem' }}>
+                        <h2 className="section-title">Connections ({displayUser.connections.length})</h2>
+                        <div className="connections-grid" style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                            gap: '1rem',
+                            marginTop: '1rem'
+                        }}>
+                            {displayUser.connections.map(conn => (
+                                <div
+                                    key={conn._id}
+                                    className="connection-card"
+                                    onClick={() => navigate(`/profile/${conn._id}`)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '1rem',
+                                        padding: '1rem',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '0.75rem',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        backgroundColor: 'var(--bg-secondary)',
+                                        textDecoration: 'none'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                        e.currentTarget.style.borderColor = 'var(--primary-400)';
+                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
+                                >
+                                    {conn.avatar ? (
+                                        <img src={conn.avatar} style={{ width: '3.5rem', height: '3.5rem', borderRadius: '50%', objectFit: 'cover' }} alt={conn.name} />
+                                    ) : (
+                                        <div style={{ width: '3.5rem', height: '3.5rem', background: 'linear-gradient(135deg, var(--primary-500), var(--secondary-500))', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'white', flexShrink: 0 }}>
+                                            {conn.name?.charAt(0) || 'U'}
+                                        </div>
+                                    )}
+                                    <div style={{ overflow: 'hidden', flex: 1 }}>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '1rem' }}>{conn.name}</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {conn.college || conn.email}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Blocked Users Section (Only for own profile) */}
                 {isOwnProfile && blockedUsersList.length > 0 && (
                     <div className="profile-section card mt-4" style={{ marginTop: '1.5rem' }}>
@@ -683,15 +747,15 @@ const ProfilePage = () => {
 
         .header-content {
           display: flex;
-          align-items: flex-end;
+          align-items: flex-start;
           gap: 1.5rem;
           padding: 0 2rem 2rem;
-          margin-top: -3rem;
-          flex-wrap: wrap;
+          position: relative;
         }
 
         .avatar-section {
           flex-shrink: 0;
+          margin-top: -3.5rem;
         }
 
         .profile-avatar {
@@ -732,11 +796,14 @@ const ProfilePage = () => {
         .header-info {
           flex: 1;
           min-width: 0; /* fixes flex children overflowing */
+          padding-top: 0.5rem;
         }
 
         .profile-name {
           font-size: 1.75rem;
           margin-bottom: 0.5rem;
+          word-break: break-word;
+          overflow-wrap: break-word;
         }
 
         .name-input {
@@ -764,6 +831,98 @@ const ProfilePage = () => {
           display: flex;
           flex-wrap: wrap;
           gap: 0.75rem;
+          margin-top: 0.5rem;
+        }
+
+        /* Modern Action Buttons */
+        .action-btn-connect {
+          background: linear-gradient(135deg, #3b82f6, #6366f1);
+          color: white;
+          border: none;
+          box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+          border-radius: 9999px;
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          padding: 0.6rem 1.75rem;
+          font-weight: 600;
+        }
+
+        .action-btn-connect:hover:not(:disabled) {
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+          background: linear-gradient(135deg, #2563eb, #4f46e5);
+        }
+
+        .action-btn-connected {
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+          border: none;
+          box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+          border-radius: 9999px;
+          transition: all 0.3s ease;
+          padding: 0.6rem 1.5rem;
+          font-weight: 600;
+        }
+
+        .action-btn-connected:hover {
+          background: linear-gradient(135deg, #dc2626, #991b1b);
+          box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+          transform: scale(0.98);
+        }
+
+        .action-btn-message {
+          background: rgba(30, 41, 59, 0.7);
+          backdrop-filter: blur(10px);
+          color: #f8fafc;
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 9999px;
+          transition: all 0.3s ease;
+          padding: 0.6rem 1.5rem;
+          font-weight: 600;
+        }
+
+        .action-btn-message:hover {
+          background: rgba(255,255,255,0.15);
+          border-color: rgba(255,255,255,0.3);
+          transform: translateY(-2px);
+        }
+
+        .action-btn-pending {
+          background: transparent;
+          color: #94a3b8;
+          border: 1px solid #64748b;
+          border-radius: 9999px;
+          padding: 0.6rem 1.5rem;
+          font-weight: 600;
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
+
+        .action-btn-danger {
+          background: rgba(239, 68, 68, 0.05);
+          color: #ef4444;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          border-radius: 9999px;
+          padding: 0.6rem 1.5rem;
+          font-weight: 600;
+          transition: all 0.3s ease;
+        }
+
+        .action-btn-danger:hover {
+          background: #ef4444;
+          color: white;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .action-btn-danger-active {
+          background: #ef4444;
+          color: white;
+          border: 1px solid #ef4444;
+          border-radius: 9999px;
+          padding: 0.6rem 1.5rem;
+          font-weight: 600;
+          box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+          transition: all 0.3s ease;
         }
 
         /* Profile Grid */
