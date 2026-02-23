@@ -62,6 +62,10 @@ export const AuthProvider = ({ children }) => {
             throw new Error(data.message || 'Login failed');
         }
 
+        if (data.requiresVerification) {
+            return data;
+        }
+
         localStorage.setItem('token', data.token);
         setToken(data.token);
         setUser(data.user);
@@ -87,6 +91,37 @@ export const AuthProvider = ({ children }) => {
 
         if (!response.ok) {
             throw new Error(data.message || 'Registration failed');
+        }
+
+        if (data.requiresVerification) {
+            return data;
+        }
+
+        localStorage.setItem('token', data.token);
+        setToken(data.token);
+        setUser(data.user);
+        return data;
+    };
+
+    const googleLogin = async (credential) => {
+        const response = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ credential })
+        });
+
+        const text = await response.text();
+        let data;
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch {
+            throw new Error('Server returned an invalid response. Please try again later.');
+        }
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Google login failed');
         }
 
         localStorage.setItem('token', data.token);
@@ -128,6 +163,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user,
         login,
         register,
+        googleLogin,
         logout,
         updateProfile
     };

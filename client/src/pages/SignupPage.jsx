@@ -15,6 +15,7 @@ import {
     Check,
     MapPin
 } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 const INTERESTS = [
     'Artificial Intelligence', 'Machine Learning', 'Web Development', 'Mobile Apps',
@@ -50,7 +51,7 @@ const SignupPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { register } = useAuth();
+    const { register, googleLogin } = useAuth();
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -128,7 +129,7 @@ const SignupPage = () => {
         setError('');
 
         try {
-            await register({
+            const data = await register({
                 name: formData.name,
                 email: formData.email,
                 password: formData.password,
@@ -140,9 +141,27 @@ const SignupPage = () => {
                 interests: formData.interests,
                 skills: formData.skills
             });
-            navigate('/');
+
+            if (data?.requiresVerification) {
+                setStep(5); // Show check email screen
+            } else {
+                navigate('/');
+            }
         } catch (err) {
             setError(err.message || 'Registration failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            setLoading(true);
+            setError('');
+            await googleLogin(credentialResponse.credential);
+            navigate('/');
+        } catch (err) {
+            setError(err.message || 'Google signup failed');
         } finally {
             setLoading(false);
         }
@@ -155,6 +174,23 @@ const SignupPage = () => {
                     <div className="step-content animate-fadeIn">
                         <h3>Create Your Account</h3>
                         <p>Let's start with your basic information</p>
+
+                        <div className="oauth-section" style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => {
+                                    setError('Google Signup Failed');
+                                }}
+                                useOneTap
+                                theme="filled_blue"
+                                shape="pill"
+                                text="signup_with"
+                            />
+                        </div>
+
+                        <div className="divider" style={{ textAlign: 'center', margin: '1rem 0 1.5rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                            - OR -
+                        </div>
 
                         <div className="form-fields">
                             <div className="input-group">
@@ -373,6 +409,20 @@ const SignupPage = () => {
                     </div>
                 );
 
+            case 5:
+                return (
+                    <div className="step-content animate-fadeIn text-center">
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', color: 'var(--primary-500)' }}>
+                            <Mail size={48} />
+                        </div>
+                        <h3>Check Your Email</h3>
+                        <p>We've sent a verification link to <strong>{formData.email}</strong>.</p>
+                        <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                            Please click the link in the email to verify your account and complete your registration.
+                        </p>
+                    </div>
+                );
+
             default:
                 return null;
         }
@@ -419,7 +469,7 @@ const SignupPage = () => {
                         {renderStep()}
 
                         <div className="form-actions">
-                            {step > 1 && (
+                            {step > 1 && step < 5 && (
                                 <button
                                     type="button"
                                     className="btn btn-ghost"
@@ -439,7 +489,7 @@ const SignupPage = () => {
                                     Next
                                     <ArrowRight size={18} />
                                 </button>
-                            ) : (
+                            ) : step === 4 ? (
                                 <button
                                     type="submit"
                                     className="btn btn-primary"
@@ -453,6 +503,15 @@ const SignupPage = () => {
                                             <ArrowRight size={18} />
                                         </>
                                     )}
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={() => navigate('/login')}
+                                    style={{ width: '100%' }}
+                                >
+                                    Continue to Login
                                 </button>
                             )}
                         </div>

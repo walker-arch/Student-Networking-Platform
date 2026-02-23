@@ -4,18 +4,29 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
     email: {
         type: String,
-        required: [true, 'Email is required'],
+        required: [true, 'Please provide an email'],
         unique: true,
-        lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
+        match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
-        minlength: [6, 'Password must be at least 6 characters'],
-        select: false // Don't include password in queries by default
+        required: function () {
+            return !this.googleId;
+        },
+        minlength: 6,
+        select: false
     },
+    googleId: {
+        type: String,
+        sparse: true,
+        unique: true
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationToken: String,
+    verificationTokenExpires: Date,
     name: {
         type: String,
         required: [true, 'Name is required'],

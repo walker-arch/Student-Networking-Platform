@@ -5,12 +5,16 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import DiscoverPage from './pages/DiscoverPage';
 import ProfilePage from './pages/ProfilePage';
 import ConnectionsPage from './pages/ConnectionsPage';
 import MessagesPage from './pages/MessagesPage';
 import { Toaster } from 'react-hot-toast';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy_client_id_for_now';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -98,6 +102,12 @@ function AppRoutes() {
         }
       />
 
+      {/* Public/Guest Verification Route */}
+      <Route
+        path="/verify-email"
+        element={<VerifyEmailPage />}
+      />
+
       {/* Protected Routes */}
       <Route
         path="/discover"
@@ -156,14 +166,16 @@ function AppRoutes() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router>
-          <AppRoutes />
-          <Toaster position="top-right" />
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <AppRoutes />
+            <Toaster position="top-right" />
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }
 

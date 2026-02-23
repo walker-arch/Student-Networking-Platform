@@ -2,161 +2,191 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    const { login } = useAuth();
-    const navigate = useNavigate();
+  const { login, googleLogin } = useAuth();
+  const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-        try {
-            await login(email, password);
-            navigate('/');
-        } catch (err) {
-            setError(err.message || 'Failed to login. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Failed to login. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="auth-page">
-            <div className="auth-container">
-                {/* Left Side - Branding */}
-                <div className="auth-branding">
-                    <div className="branding-content">
-                        <div className="brand-logo">
-                            <span>S</span>
-                        </div>
-                        <h1>Welcome Back to <span className="gradient-text">StudentNet</span></h1>
-                        <p>Connect with like-minded students, collaborate on projects, and grow together.</p>
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setLoading(true);
+      setError('');
+      await googleLogin(credentialResponse.credential);
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Google login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                        <div className="features-list">
-                            <div className="feature-item">
-                                <div className="feature-icon">🎯</div>
-                                <div>
-                                    <h4>Interest-Based Matching</h4>
-                                    <p>Find students with similar passions</p>
-                                </div>
-                            </div>
-                            <div className="feature-item">
-                                <div className="feature-icon">🤝</div>
-                                <div>
-                                    <h4>Smart Connections</h4>
-                                    <p>Build meaningful relationships</p>
-                                </div>
-                            </div>
-                            <div className="feature-item">
-                                <div className="feature-icon">💬</div>
-                                <div>
-                                    <h4>Easy Communication</h4>
-                                    <p>Chat and collaborate seamlessly</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+  return (
+    <div className="auth-page">
+      <div className="auth-container">
+        {/* Left Side - Branding */}
+        <div className="auth-branding">
+          <div className="branding-content">
+            <div className="brand-logo">
+              <span>S</span>
+            </div>
+            <h1>Welcome Back to <span className="gradient-text">StudentNet</span></h1>
+            <p>Connect with like-minded students, collaborate on projects, and grow together.</p>
+
+            <div className="features-list">
+              <div className="feature-item">
+                <div className="feature-icon">🎯</div>
+                <div>
+                  <h4>Interest-Based Matching</h4>
+                  <p>Find students with similar passions</p>
                 </div>
-
-                {/* Right Side - Form */}
-                <div className="auth-form-container">
-                    <div className="auth-form-wrapper">
-                        <div className="form-header">
-                            <h2>Sign In</h2>
-                            <p>Enter your credentials to access your account</p>
-                        </div>
-
-                        {error && (
-                            <div className="error-alert animate-slideDown">
-                                <span>{error}</span>
-                            </div>
-                        )}
-
-                        <form onSubmit={handleSubmit} className="auth-form">
-                            <div className="input-group">
-                                <label htmlFor="email">Email Address</label>
-                                <div className="input-wrapper">
-                                    <Mail size={18} className="input-icon" />
-                                    <input
-                                        type="email"
-                                        id="email"
-                                        className="input"
-                                        placeholder="you@university.edu"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="input-group">
-                                <label htmlFor="password">Password</label>
-                                <div className="input-wrapper">
-                                    <Lock size={18} className="input-icon" />
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        id="password"
-                                        className="input"
-                                        placeholder="Enter your password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        className="password-toggle"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                    >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="form-options">
-                                <label className="checkbox-label">
-                                    <input type="checkbox" />
-                                    <span>Remember me</span>
-                                </label>
-                                <Link to="/forgot-password" className="forgot-link">
-                                    Forgot password?
-                                </Link>
-                            </div>
-
-                            <button
-                                type="submit"
-                                className="btn btn-primary btn-full"
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <Loader size={20} className="animate-spin" />
-                                ) : (
-                                    <>
-                                        Sign In
-                                        <ArrowRight size={18} />
-                                    </>
-                                )}
-                            </button>
-                        </form>
-
-                        <div className="auth-footer">
-                            <p>
-                                Don't have an account?{' '}
-                                <Link to="/signup" className="auth-link">Create one</Link>
-                            </p>
-                        </div>
-                    </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">🤝</div>
+                <div>
+                  <h4>Smart Connections</h4>
+                  <p>Build meaningful relationships</p>
                 </div>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">💬</div>
+                <div>
+                  <h4>Easy Communication</h4>
+                  <p>Chat and collaborate seamlessly</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Form */}
+        <div className="auth-form-container">
+          <div className="auth-form-wrapper">
+            <div className="form-header">
+              <h2>Sign In</h2>
+              <p>Enter your credentials to access your account</p>
             </div>
 
-            <style>{`
+            {error && (
+              <div className="error-alert animate-slideDown">
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="oauth-section" style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => {
+                  setError('Google Login Failed');
+                }}
+                useOneTap
+                theme="filled_blue"
+                shape="pill"
+              />
+            </div>
+
+            <div className="divider" style={{ textAlign: 'center', margin: '1rem 0 1.5rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+              - OR -
+            </div>
+
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="input-group">
+                <label htmlFor="email">Email Address</label>
+                <div className="input-wrapper">
+                  <Mail size={18} className="input-icon" />
+                  <input
+                    type="email"
+                    id="email"
+                    className="input"
+                    placeholder="you@university.edu"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="password">Password</label>
+                <div className="input-wrapper">
+                  <Lock size={18} className="input-icon" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    className="input"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-options">
+                <label className="checkbox-label">
+                  <input type="checkbox" />
+                  <span>Remember me</span>
+                </label>
+                <Link to="/forgot-password" className="forgot-link">
+                  Forgot password?
+                </Link>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-primary btn-full"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader size={20} className="animate-spin" />
+                ) : (
+                  <>
+                    Sign In
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="auth-footer">
+              <p>
+                Don't have an account?{' '}
+                <Link to="/signup" className="auth-link">Create one</Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
         .auth-page {
           min-height: 100vh;
           display: flex;
@@ -412,8 +442,8 @@ const LoginPage = () => {
           }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default LoginPage;
