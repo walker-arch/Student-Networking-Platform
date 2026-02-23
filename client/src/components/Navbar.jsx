@@ -193,7 +193,8 @@ const Navbar = () => {
             </span>
           </Link>
 
-          <div style={{
+          {/* Desktop: theme + login + signup (hidden on mobile via CSS) */}
+          <div className="guest-desktop-actions" style={{
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem'
@@ -240,7 +241,103 @@ const Navbar = () => {
               Sign Up
             </Link>
           </div>
+
+          {/* Mobile hamburger (shown on mobile via CSS) */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="guest-mobile-menu-btn"
+            style={{
+              display: 'none',
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-primary)',
+              cursor: 'pointer'
+            }}
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
+        {/* Mobile sidebar dropdown (guest) */}
+        {mobileMenuOpen && (
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            background: 'var(--bg-primary)',
+            borderBottom: '1px solid var(--border-color)',
+            padding: '1rem',
+            zIndex: 50
+          }}>
+            <button
+              onClick={() => { toggleTheme(); setMobileMenuOpen(false); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                width: '100%',
+                padding: '0.75rem 1rem',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                borderRadius: '0.5rem',
+                textAlign: 'left'
+              }}
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+            <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.5rem 0' }} />
+            <Link
+              to="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                width: '100%',
+                padding: '0.75rem 1rem',
+                color: 'var(--text-secondary)',
+                textDecoration: 'none',
+                borderRadius: '0.5rem'
+              }}
+            >
+              <User size={20} />
+              <span>Login</span>
+            </Link>
+            <Link
+              to="/signup"
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                width: '100%',
+                padding: '0.75rem 1rem',
+                color: 'var(--primary-500)',
+                textDecoration: 'none',
+                borderRadius: '0.5rem',
+                fontWeight: 600
+              }}
+            >
+              <UserPlus size={20} />
+              <span>Sign Up</span>
+            </Link>
+          </div>
+        )}
+
+        <style>{`
+          @media (max-width: 768px) {
+            .guest-desktop-actions {
+              display: none !important;
+            }
+            .guest-mobile-menu-btn {
+              display: flex !important;
+            }
+          }
+        `}</style>
       </nav>
     );
   }
