@@ -60,16 +60,26 @@ router.get('/conversations', authenticate, async (req, res) => {
 
         // Populate user details
         const conversationIds = messages.map(m => m._id);
+
+        const currentUser = await User.findById(userId)
+            .populate('connections', 'name email college avatar lastActive')
+            .select('clearedChats connections');
+
         const users = await User.find({ _id: { $in: conversationIds } })
-            .select('name email college avatar');
+            .select('name email college avatar lastActive');
 
         const userMap = {};
         users.forEach(u => {
             userMap[u._id.toString()] = u;
         });
 
+        if (currentUser && currentUser.connections) {
+            currentUser.connections.forEach(conn => {
+                userMap[conn._id.toString()] = conn;
+            });
+        }
+
         // Get current user's cleared chats
-        const currentUser = await User.findById(userId).select('clearedChats');
         const clearedMap = new Map();
         if (currentUser && currentUser.clearedChats) {
             currentUser.clearedChats.forEach(c => {
@@ -93,13 +103,38 @@ router.get('/conversations', authenticate, async (req, res) => {
                 }
             }
 
+            const otherUser = userMap[otherUserId];
+            let userObj = otherUser;
+            if (otherUser) {
+                userObj = otherUser.toObject ? otherUser.toObject() : { ...otherUser };
+                userObj.online = userObj.lastActive ? (Date.now() - new Date(userObj.lastActive).getTime() < 5 * 60 * 1000) : false;
+            }
+
             return {
                 _id: otherUserId,
-                user: userMap[otherUserId],
+                user: userObj,
                 lastMessage: lastMsg,
                 unread: msg.unreadCount
             };
         }).filter(conv => conv.user); // Remove if user somehow doesn't exist anymore
+
+        // Add connections that are not in conversations
+        const existingConvIds = new Set(conversations.map(c => c._id.toString()));
+        if (currentUser && currentUser.connections) {
+            currentUser.connections.forEach(conn => {
+                const connId = conn._id.toString();
+                if (!existingConvIds.has(connId)) {
+                    const connObj = conn.toObject ? conn.toObject() : { ...conn };
+                    connObj.online = connObj.lastActive ? (Date.now() - new Date(connObj.lastActive).getTime() < 5 * 60 * 1000) : false;
+                    conversations.push({
+                        _id: connId,
+                        user: connObj,
+                        lastMessage: null,
+                        unread: 0
+                    });
+                }
+            });
+        }
 
         res.json(conversations);
     } catch (error) {

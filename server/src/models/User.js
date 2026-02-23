@@ -81,7 +81,11 @@ const userSchema = new mongoose.Schema({
     clearedChats: [{
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         clearedAt: { type: Date, default: Date.now }
-    }]
+    }],
+    lastActive: {
+        type: Date,
+        default: Date.now
+    }
 }, {
     timestamps: true
 });

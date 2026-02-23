@@ -26,6 +26,9 @@ export const authenticate = async (req, res, next) => {
         req.user = user;
         req.userId = user._id;
 
+        // Update lastActive timestamp without awaiting to not block request
+        User.updateOne({ _id: user._id }, { lastActive: new Date() }).catch(e => console.error('lastActive update error', e));
+
         next();
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {

@@ -333,7 +333,10 @@ router.get('/:id', authenticate, async (req, res) => {
             await User.findByIdAndUpdate(req.params.id, { $inc: { profileViews: 1 } });
         }
 
-        res.json(user);
+        const userObj = user.toObject();
+        userObj.online = userObj.lastActive ? (Date.now() - new Date(userObj.lastActive).getTime() < 5 * 60 * 1000) : true;
+        // The requester themselves is online (the API call updates the time shortly anyway, but it is instant this way)
+        res.json(userObj);
     } catch (error) {
         console.error('Get user error:', error);
 

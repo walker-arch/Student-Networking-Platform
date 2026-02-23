@@ -30,7 +30,7 @@ const MessagesPage = () => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [hoveredMessage, setHoveredMessage] = useState(null);
   const [deletingMsg, setDeletingMsg] = useState(null);
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const menuRef = useRef(null);
 
   const showToast = (msg) => {
@@ -86,7 +86,7 @@ const MessagesPage = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, loading]);
 
   useEffect(() => {
     scrollToBottom();
@@ -128,7 +128,12 @@ const MessagesPage = () => {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   const handleSendMessage = async (e) => {
@@ -243,8 +248,14 @@ const MessagesPage = () => {
                     <span className="conv-time">{conv.lastMessage?.createdAt}</span>
                   </div>
                   <p className="conv-preview">
-                    {conv.lastMessage?.sender === 'me' && 'You: '}
-                    {conv.lastMessage?.content}
+                    {conv.lastMessage ? (
+                      <>
+                        {conv.lastMessage.sender === 'me' && 'You: '}
+                        {conv.lastMessage.content}
+                      </>
+                    ) : (
+                      <span style={{ fontStyle: 'italic', opacity: 0.7 }}>Start a conversation</span>
+                    )}
                   </p>
                 </div>
                 {conv.unread > 0 && (
@@ -334,7 +345,7 @@ const MessagesPage = () => {
             )}
 
             {/* Messages */}
-            <div className="messages-container">
+            <div className="messages-container" ref={messagesContainerRef}>
               {messages.length === 0 ? (
                 <div className="empty-chat-state">
                   <p>No messages yet.</p>
@@ -369,7 +380,6 @@ const MessagesPage = () => {
                   </div>
                 ))
               )}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
