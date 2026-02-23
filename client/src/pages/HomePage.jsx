@@ -584,6 +584,17 @@ const AuthenticatedHome = ({ user }) => {
             </div>
             <Link to="/profile" className="edit-link">Edit skills →</Link>
           </div>
+
+          {/* Your Career Goals */}
+          <div className="career-goals-card card">
+            <h3>Your Career Goals</h3>
+            <div className="career-goals-tags">
+              {user?.careerGoals?.slice(0, 6).map((goal, idx) => (
+                <span key={idx} className="badge badge-accent" style={{ background: 'var(--primary-100)', color: 'var(--primary-700)', border: '1px solid var(--primary-200)' }}>{goal}</span>
+              )) || <p className="no-data">No career goals added yet</p>}
+            </div>
+            <Link to="/profile" className="edit-link">Edit career goals →</Link>
+          </div>
         </div>
       </div>
 
@@ -706,17 +717,20 @@ const AuthenticatedHome = ({ user }) => {
         }
 
         .interests-card,
-        .skills-card {
+        .skills-card,
+        .career-goals-card {
           grid-column: span 1;
         }
 
         .interests-card h3,
-        .skills-card h3 {
+        .skills-card h3,
+        .career-goals-card h3 {
           margin-bottom: 1rem;
         }
 
         .interests-tags,
-        .skills-tags {
+        .skills-tags,
+        .career-goals-tags {
           display: flex;
           flex-wrap: wrap;
           gap: 0.5rem;
@@ -747,7 +761,8 @@ const AuthenticatedHome = ({ user }) => {
           }
 
           .interests-card,
-          .skills-card {
+          .skills-card,
+          .career-goals-card {
             grid-column: 1;
           }
         }

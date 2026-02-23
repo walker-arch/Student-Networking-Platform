@@ -25,6 +25,7 @@ const MOCK_STUDENTS = [
     bio: 'Passionate about AI and ML. Looking for research collaborators.',
     interests: ['Artificial Intelligence', 'Machine Learning', 'Research'],
     skills: ['Python', 'TensorFlow', 'PyTorch'],
+    careerGoals: ['Machine Learning Engineer', 'Research Scientist'],
     matchScore: 92
   },
   {
@@ -36,6 +37,7 @@ const MOCK_STUDENTS = [
     bio: 'Full stack developer and startup enthusiast.',
     interests: ['Web Development', 'Startups', 'Open Source'],
     skills: ['JavaScript', 'React', 'Node.js'],
+    careerGoals: ['Full Stack Developer', 'Entrepreneur/Founder'],
     matchScore: 88
   },
   {
@@ -47,6 +49,7 @@ const MOCK_STUDENTS = [
     bio: 'UI/UX designer transitioning to development.',
     interests: ['UI/UX Design', 'Web Development', 'Mobile Apps'],
     skills: ['Figma', 'React', 'TypeScript'],
+    careerGoals: ['UX/UI Designer', 'Frontend Developer'],
     matchScore: 85
   },
   {
@@ -58,6 +61,7 @@ const MOCK_STUDENTS = [
     bio: 'IoT and embedded systems developer.',
     interests: ['IoT', 'Robotics', 'Cloud Computing'],
     skills: ['C++', 'Python', 'AWS'],
+    careerGoals: ['Cloud Architect', 'Software Engineer'],
     matchScore: 82
   },
   {
@@ -69,6 +73,7 @@ const MOCK_STUDENTS = [
     bio: 'Cybersecurity enthusiast and CTF player.',
     interests: ['Cybersecurity', 'Competitive Programming', 'Networking'],
     skills: ['Python', 'Linux', 'SQL'],
+    careerGoals: ['Cybersecurity Analyst', 'Backend Developer'],
     matchScore: 79
   },
   {
@@ -80,6 +85,7 @@ const MOCK_STUDENTS = [
     bio: 'Game developer and 3D artist.',
     interests: ['Game Development', 'AR/VR', 'UI/UX Design'],
     skills: ['Unity', 'C#', 'Blender'],
+    careerGoals: ['Game Developer', 'UX/UI Designer'],
     matchScore: 76
   }
 ];
@@ -139,7 +145,8 @@ const DiscoverPage = () => {
         (student.name || '').toLowerCase().includes(query) ||
         (student.college || '').toLowerCase().includes(query) ||
         (student.interests || []).some(i => i.toLowerCase().includes(query)) ||
-        (student.skills || []).some(s => s.toLowerCase().includes(query));
+        (student.skills || []).some(s => s.toLowerCase().includes(query)) ||
+        (student.careerGoals || []).some(g => g.toLowerCase().includes(query));
       if (!matchesSearch) return false;
     }
 
@@ -478,6 +485,21 @@ const StudentCard = ({ student, onConnect, style }) => {
             ))}
             {student.skills.length > 3 && (
               <span className="badge badge-more">+{student.skills.length - 3}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Career Goals */}
+      {student.careerGoals && student.careerGoals.length > 0 && (
+        <div className="card-section">
+          <h4>Career Goals</h4>
+          <div className="tags">
+            {student.careerGoals.slice(0, 3).map((goal, idx) => (
+              <span key={idx} className="badge badge-accent" style={{ background: 'var(--primary-100)', color: 'var(--primary-700)', border: '1px solid var(--primary-200)' }}>{goal}</span>
+            ))}
+            {student.careerGoals.length > 3 && (
+              <span className="badge badge-more">+{student.careerGoals.length - 3}</span>
             )}
           </div>
         </div>

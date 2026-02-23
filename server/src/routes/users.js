@@ -156,7 +156,8 @@ router.get('/search', authenticate, async (req, res) => {
                 { college: { $regex: q, $options: 'i' } },
                 { interests: { $regex: q, $options: 'i' } },
                 { skills: { $regex: q, $options: 'i' } },
-                { location: { $regex: q, $options: 'i' } }
+                { location: { $regex: q, $options: 'i' } },
+                { careerGoals: { $regex: q, $options: 'i' } }
             ];
         }
 

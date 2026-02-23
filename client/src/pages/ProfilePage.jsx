@@ -30,6 +30,14 @@ const INTERESTS = [
     'Startups', 'Research', 'Networking', 'Public Speaking'
 ];
 
+const CAREER_GOALS = [
+    'Software Engineer', 'Data Scientist', 'Product Manager', 'UX/UI Designer',
+    'Machine Learning Engineer', 'DevOps Engineer', 'Cloud Architect',
+    'Cybersecurity Analyst', 'Full Stack Developer', 'Frontend Developer',
+    'Backend Developer', 'Mobile App Developer', 'Game Developer',
+    'Research Scientist', 'Entrepreneur/Founder', 'Consultant'
+];
+
 const SKILLS = [
     'JavaScript', 'Python', 'Java', 'C++', 'React', 'Node.js',
     'TypeScript', 'Go', 'Rust', 'Swift', 'Kotlin', 'SQL',
@@ -59,7 +67,8 @@ const ProfilePage = () => {
         year: '',
         location: '',
         interests: [],
-        skills: []
+        skills: [],
+        careerGoals: []
     });
 
     const [isBlocked, setIsBlocked] = useState(false);
@@ -80,7 +89,8 @@ const ProfilePage = () => {
                     year: currentUser.year?.toString() || '',
                     location: currentUser.location || '',
                     interests: currentUser.interests || [],
-                    skills: currentUser.skills || []
+                    skills: currentUser.skills || [],
+                    careerGoals: currentUser.careerGoals || []
                 });
             }
             fetchBlockedUsers();
@@ -258,7 +268,8 @@ const ProfilePage = () => {
             year: currentUser.year?.toString() || '',
             location: currentUser.location || '',
             interests: currentUser.interests || [],
-            skills: currentUser.skills || []
+            skills: currentUser.skills || [],
+            careerGoals: currentUser.careerGoals || []
         });
         setIsEditing(false);
         setError('');
@@ -470,28 +481,29 @@ const ProfilePage = () => {
                 </div>
 
                 {/* Profile Content */}
-                <div className="profile-grid">
-                    {/* Left Column - About */}
-                    <div className="profile-column">
-                        <div className="profile-section card">
-                            <h2 className="section-title">About</h2>
-                            {isEditing ? (
-                                <textarea
-                                    name="bio"
-                                    className="input textarea"
-                                    value={formData.bio}
-                                    onChange={handleChange}
-                                    placeholder="Tell us about yourself..."
-                                    rows={4}
-                                />
-                            ) : (
-                                <p className="bio-text">
-                                    {displayUser?.bio || 'No bio yet.'}
-                                </p>
-                            )}
-                        </div>
+                {/* Full Width About Section */}
+                <div className="profile-section card about-card">
+                    <h2 className="section-title">About</h2>
+                    {isEditing ? (
+                        <textarea
+                            name="bio"
+                            className="input textarea"
+                            value={formData.bio}
+                            onChange={handleChange}
+                            placeholder="Tell us about yourself..."
+                            rows={4}
+                        />
+                    ) : (
+                        <p className="bio-text">
+                            {displayUser?.bio || 'No bio yet.'}
+                        </p>
+                    )}
+                </div>
 
-                        {isEditing && (
+                <div className="profile-grid">
+                    {/* Left Column - Academic Info */}
+                    <div className="profile-column">
+                        {isEditing ? (
                             <div className="profile-section card">
                                 <h2 className="section-title">Academic Info</h2>
                                 <div className="form-fields">
@@ -547,10 +559,44 @@ const ProfilePage = () => {
                                     </div>
                                 </div>
                             </div>
+                        ) : (
+                            <div className="profile-section card">
+                                <h2 className="section-title">Academic Info</h2>
+                                <div className="academic-details">
+                                    {displayUser?.location ? (
+                                        <div className="academic-item">
+                                            <span className="academic-label">Location</span>
+                                            <span className="academic-value">{displayUser.location}</span>
+                                        </div>
+                                    ) : null}
+                                    {displayUser?.college ? (
+                                        <div className="academic-item">
+                                            <span className="academic-label">College/University</span>
+                                            <span className="academic-value">{displayUser.college}</span>
+                                        </div>
+                                    ) : null}
+                                    {displayUser?.course ? (
+                                        <div className="academic-item">
+                                            <span className="academic-label">Course/Program</span>
+                                            <span className="academic-value">{displayUser.course}</span>
+                                        </div>
+                                    ) : null}
+                                    {displayUser?.year ? (
+                                        <div className="academic-item">
+                                            <span className="academic-label">Year</span>
+                                            <span className="academic-value">{displayUser.year}</span>
+                                        </div>
+                                    ) : null}
+
+                                    {!displayUser?.location && !displayUser?.college && !displayUser?.course && !displayUser?.year && (
+                                        <p className="no-data">No academic information provided.</p>
+                                    )}
+                                </div>
+                            </div>
                         )}
                     </div>
 
-                    {/* Right Column - Interests & Skills */}
+                    {/* Right Column - Interests, Skills, Career Goals */}
                     <div className="profile-column">
                         <div className="profile-section card">
                             <h2 className="section-title">Interests</h2>
@@ -603,6 +649,34 @@ const ProfilePage = () => {
                                         ))
                                     ) : (
                                         <p className="no-data">No skills added yet</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="profile-section card">
+                            <h2 className="section-title">Career Goals</h2>
+                            {isEditing ? (
+                                <div className="tag-selector">
+                                    {CAREER_GOALS.map(goal => (
+                                        <button
+                                            key={goal}
+                                            type="button"
+                                            className={`tag-btn ${formData.careerGoals.includes(goal) ? 'selected' : ''}`}
+                                            onClick={() => toggleItem('careerGoals', goal)}
+                                        >
+                                            {goal}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="tags-display">
+                                    {displayUser?.careerGoals?.length > 0 ? (
+                                        displayUser.careerGoals.map((goal, idx) => (
+                                            <span key={idx} className="badge badge-accent" style={{ background: 'var(--primary-100)', color: 'var(--primary-700)', border: '1px solid var(--primary-200)' }}>{goal}</span>
+                                        ))
+                                    ) : (
+                                        <p className="no-data">No career goals added yet</p>
                                     )}
                                 </div>
                             )}
@@ -947,6 +1021,10 @@ const ProfilePage = () => {
         }
 
         /* Profile Grid */
+        .about-card {
+          margin-bottom: 1.5rem;
+        }
+
         .profile-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -962,10 +1040,38 @@ const ProfilePage = () => {
         }
 
         .section-title {
-          font-size: 1rem;
-          margin-bottom: 1rem;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          margin-bottom: 1.25rem;
           padding-bottom: 0.75rem;
           border-bottom: 1px solid var(--border-color);
+        }
+
+        .academic-details {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .academic-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .academic-label {
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--text-muted);
+          font-weight: 600;
+        }
+
+        .academic-value {
+          font-size: 0.95rem;
+          color: var(--text-primary);
+          font-weight: 500;
         }
 
         .bio-text {
