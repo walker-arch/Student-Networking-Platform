@@ -12,6 +12,7 @@ import {
   X,
   ChevronDown
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // Mock data for demonstration (will be replaced with API)
 const MOCK_STUDENTS = [
@@ -124,8 +125,10 @@ const DiscoverPage = () => {
           s._id === studentId ? { ...s, connectionStatus: 'pending' } : s
         )
       );
+      toast.success('Connection request sent!');
     } catch (error) {
       console.error('Failed to send connection request:', error);
+      toast.error('Failed to connect. Please try again.');
     }
   };
 
@@ -430,14 +433,18 @@ const StudentCard = ({ student, onConnect, style }) => {
         </div>
         <h3 className="student-name">{student.name}</h3>
         <div className="student-info">
-          <span className="info-item">
-            <MapPin size={14} />
-            {student.location ? `${student.location} • ${student.college || ''}` : student.college || 'Unknown Location'}
-          </span>
-          <span className="info-item">
-            <GraduationCap size={14} />
-            {student.course || 'Unknown Course'} • Year {student.year || '?'}
-          </span>
+          {(student.location || student.college) && (
+            <span className="info-item">
+              <MapPin size={14} />
+              {student.location ? `${student.location} ${student.college ? `• ${student.college}` : ''}` : student.college}
+            </span>
+          )}
+          {(student.course || student.year) && (
+            <span className="info-item">
+              <GraduationCap size={14} />
+              {student.course ? `${student.course} ${student.year ? `• Year ${student.year}` : ''}` : (student.year ? `Year ${student.year}` : '')}
+            </span>
+          )}
         </div>
       </div>
 
@@ -447,30 +454,34 @@ const StudentCard = ({ student, onConnect, style }) => {
       )}
 
       {/* Interests */}
-      <div className="card-section">
-        <h4>Interests</h4>
-        <div className="tags">
-          {(student.interests || []).slice(0, 3).map((interest, idx) => (
-            <span key={idx} className="badge">{interest}</span>
-          ))}
-          {(student.interests || []).length > 3 && (
-            <span className="badge badge-more">+{student.interests.length - 3}</span>
-          )}
+      {student.interests && student.interests.length > 0 && (
+        <div className="card-section">
+          <h4>Interests</h4>
+          <div className="tags">
+            {student.interests.slice(0, 3).map((interest, idx) => (
+              <span key={idx} className="badge">{interest}</span>
+            ))}
+            {student.interests.length > 3 && (
+              <span className="badge badge-more">+{student.interests.length - 3}</span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Skills */}
-      <div className="card-section">
-        <h4>Skills</h4>
-        <div className="tags">
-          {(student.skills || []).slice(0, 3).map((skill, idx) => (
-            <span key={idx} className="badge badge-secondary">{skill}</span>
-          ))}
-          {(student.skills || []).length > 3 && (
-            <span className="badge badge-more">+{student.skills.length - 3}</span>
-          )}
+      {student.skills && student.skills.length > 0 && (
+        <div className="card-section">
+          <h4>Skills</h4>
+          <div className="tags">
+            {student.skills.slice(0, 3).map((skill, idx) => (
+              <span key={idx} className="badge badge-secondary">{skill}</span>
+            ))}
+            {student.skills.length > 3 && (
+              <span className="badge badge-more">+{student.skills.length - 3}</span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Actions */}
       <div className="card-actions">

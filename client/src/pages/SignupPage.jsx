@@ -12,7 +12,8 @@ import {
     ArrowRight,
     ArrowLeft,
     Loader,
-    Check
+    Check,
+    MapPin
 } from 'lucide-react';
 
 const INTERESTS = [
@@ -41,6 +42,7 @@ const SignupPage = () => {
         course: '',
         year: '',
         bio: '',
+        location: '',
         interests: [],
         skills: []
     });
@@ -134,6 +136,7 @@ const SignupPage = () => {
                 course: formData.course,
                 year: parseInt(formData.year),
                 bio: formData.bio,
+                location: formData.location,
                 interests: formData.interests,
                 skills: formData.skills
             });
@@ -235,6 +238,22 @@ const SignupPage = () => {
                         <p>Tell us about your educational background</p>
 
                         <div className="form-fields">
+                            <div className="input-group">
+                                <label htmlFor="location">Location</label>
+                                <div className="input-wrapper">
+                                    <MapPin size={18} className="input-icon" />
+                                    <input
+                                        type="text"
+                                        id="location"
+                                        name="location"
+                                        className="input"
+                                        placeholder="e.g., Delhi, India"
+                                        value={formData.location}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+
                             <div className="input-group">
                                 <label htmlFor="college">College/University</label>
                                 <div className="input-wrapper">
@@ -506,7 +525,7 @@ const SignupPage = () => {
           border-radius: 9999px;
           font-size: 0.875rem;
           font-weight: 600;
-          color: var(--text-muted);
+          color: var(--text-secondary);
           transition: all var(--transition-normal);
         }
 
@@ -517,13 +536,14 @@ const SignupPage = () => {
         }
 
         .step-label {
-          font-size: 0.75rem;
-          color: var(--text-muted);
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: var(--text-secondary);
         }
 
         .progress-step.active .step-label {
           color: var(--text-primary);
-          font-weight: 500;
+          font-weight: 600;
         }
 
         .signup-card {

@@ -9,6 +9,7 @@ import DiscoverPage from './pages/DiscoverPage';
 import ProfilePage from './pages/ProfilePage';
 import ConnectionsPage from './pages/ConnectionsPage';
 import MessagesPage from './pages/MessagesPage';
+import { Toaster } from 'react-hot-toast';
 import './index.css';
 
 // Protected Route Component
@@ -159,6 +160,7 @@ function App() {
       <AuthProvider>
         <Router>
           <AppRoutes />
+          <Toaster position="top-right" />
         </Router>
       </AuthProvider>
     </ThemeProvider>

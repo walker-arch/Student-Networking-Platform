@@ -20,6 +20,7 @@ import {
     Ban,
     Users
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const INTERESTS = [
     'Artificial Intelligence', 'Machine Learning', 'Web Development', 'Mobile Apps',
@@ -144,9 +145,11 @@ const ProfilePage = () => {
             setConnectionStatus(null);
             setConnectionId(null);
             setShowUnfriendModal(false);
+            toast.success('Connection removed');
         } catch (error) {
             console.error('Failed to remove connection:', error);
             setShowUnfriendModal(false);
+            toast.error('Failed to remove connection');
         }
     };
 
@@ -155,6 +158,7 @@ const ProfilePage = () => {
         try {
             await api.sendConnectionRequest(userId);
             setConnectionStatus('pending');
+            toast.success('Connection request sent!');
         } catch (error) {
             console.error('Connection request failed:', error);
             // If already connected or pending, update status
@@ -162,6 +166,8 @@ const ProfilePage = () => {
                 setConnectionStatus('accepted');
             } else if (error.message?.includes('pending')) {
                 setConnectionStatus('pending');
+            } else {
+                toast.error('Failed to connect. Please try again.');
             }
         } finally {
             setConnecting(false);
@@ -192,16 +198,27 @@ const ProfilePage = () => {
     };
 
     const handleSave = async () => {
+        if (!formData.name?.trim()) {
+            toast.error('Name is required');
+            return;
+        }
+        if (!formData.course?.trim()) {
+            toast.error('Course/Program is required');
+            return;
+        }
+
         setSaving(true);
         setError('');
         try {
             await updateProfile({
                 ...formData,
-                year: parseInt(formData.year)
+                year: parseInt(formData.year) || null
             });
             setIsEditing(false);
+            toast.success('Profile updated successfully!');
         } catch (error) {
             setError(error.message || 'Failed to update profile');
+            toast.error(error.message || 'Failed to update profile');
         } finally {
             setSaving(false);
         }
@@ -219,10 +236,14 @@ const ProfilePage = () => {
             // Update auth context user if it's the current user
             if (isOwnProfile) {
                 // You might need an update user method in AuthContext, or just rely on a page reload if it's simpler
-                window.location.reload();
+                toast.success('Avatar updated successfully!');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                toast.success('Avatar updated successfully!');
             }
         } catch (error) {
             setError(error.message || 'Failed to upload image');
+            toast.error(error.message || 'Failed to upload image');
         } finally {
             setUploadingAvatar(false);
         }

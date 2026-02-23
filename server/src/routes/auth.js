@@ -20,7 +20,7 @@ const checkDB = (req, res) => {
 router.post('/register', async (req, res) => {
     if (!checkDB(req, res)) return;
     try {
-        const { email, password, name, college, course, year, bio, interests, skills } = req.body;
+        const { email, password, name, college, course, year, bio, location, interests, skills } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -37,6 +37,7 @@ router.post('/register', async (req, res) => {
             course,
             year,
             bio,
+            location,
             interests: interests || [],
             skills: skills || []
         });
