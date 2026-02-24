@@ -52,17 +52,17 @@ const GuestHome = () => {
             </div>
             <div className="hero-stats">
               <div className="stat">
-                <span className="stat-number">10K+</span>
+                <span className="stat-number">1K+</span>
                 <span className="stat-label">Students</span>
               </div>
               <div className="stat-divider" />
               <div className="stat">
-                <span className="stat-number">500+</span>
+                <span className="stat-number">5+</span>
                 <span className="stat-label">Colleges</span>
               </div>
               <div className="stat-divider" />
               <div className="stat">
-                <span className="stat-number">5K+</span>
+                <span className="stat-number">1K+</span>
                 <span className="stat-label">Connections</span>
               </div>
             </div>

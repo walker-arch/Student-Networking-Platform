@@ -40,8 +40,9 @@ const DiscoverPage = () => {
       const data = await api.getRecommendations();
       setStudents(data);
     } catch (error) {
-      console.log('Using mock data');
-      setStudents(MOCK_STUDENTS);
+      console.error('Failed to fetch recommendations:', error);
+      toast.error('Failed to load recommendations');
+      setStudents([]);
     } finally {
       setLoading(false);
     }
