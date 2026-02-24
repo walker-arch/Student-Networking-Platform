@@ -10,6 +10,12 @@ import DiscoverPage from './pages/DiscoverPage';
 import ProfilePage from './pages/ProfilePage';
 import ConnectionsPage from './pages/ConnectionsPage';
 import MessagesPage from './pages/MessagesPage';
+import HelpCenterPage from './pages/HelpCenterPage';
+import CommunityGuidelinesPage from './pages/CommunityGuidelinesPage';
+import CareerAdvicePage from './pages/CareerAdvicePage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import CookiePolicyPage from './pages/CookiePolicyPage';
 import { Toaster } from 'react-hot-toast';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
@@ -83,6 +89,12 @@ function AppRoutes() {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Layout><HomePage /></Layout>} />
+      <Route path="/help-center" element={<Layout><HelpCenterPage /></Layout>} />
+      <Route path="/community-guidelines" element={<Layout><CommunityGuidelinesPage /></Layout>} />
+      <Route path="/career-advice" element={<Layout><CareerAdvicePage /></Layout>} />
+      <Route path="/privacy-policy" element={<Layout><PrivacyPolicyPage /></Layout>} />
+      <Route path="/terms-of-service" element={<Layout><TermsOfServicePage /></Layout>} />
+      <Route path="/cookie-policy" element={<Layout><CookiePolicyPage /></Layout>} />
 
       {/* Guest Only Routes */}
       <Route

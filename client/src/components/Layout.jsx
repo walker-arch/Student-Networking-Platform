@@ -1,8 +1,15 @@
-import { Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import { Github, Twitter, Linkedin, Mail } from 'lucide-react';
 
 const Layout = ({ children }) => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   return (
     <div className="layout">
       <Navbar />
@@ -36,25 +43,25 @@ const Layout = ({ children }) => {
             {/* Quick Links */}
             <div className="footer-links-col">
               <h3>Platform</h3>
-              <a href="/discover">Discover</a>
-              <a href="/messages">Messages</a>
-              <a href="/connections">Connections</a>
+              <Link to="/discover">Discover</Link>
+              <Link to="/messages">Messages</Link>
+              <Link to="/connections">Connections</Link>
             </div>
 
             {/* Resources */}
             <div className="footer-links-col">
               <h3>Resources</h3>
-              <a href="#">Help Center</a>
-              <a href="#">Community Guidelines</a>
-              <a href="#">Career Advice</a>
+              <Link to="/help-center">Help Center</Link>
+              <Link to="/community-guidelines">Community Guidelines</Link>
+              <Link to="/career-advice">Career Advice</Link>
             </div>
 
             {/* Legal */}
             <div className="footer-links-col">
               <h3>Legal</h3>
-              <a href="#">Privacy Policy</a>
-              <a href="#">Terms of Service</a>
-              <a href="#">Cookie Policy</a>
+              <Link to="/privacy-policy">Privacy Policy</Link>
+              <Link to="/terms-of-service">Terms of Service</Link>
+              <Link to="/cookie-policy">Cookie Policy</Link>
             </div>
           </div>
 
