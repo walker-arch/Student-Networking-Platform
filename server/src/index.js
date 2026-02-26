@@ -10,7 +10,7 @@ import connectionRoutes from './routes/connections.js';
 import messageRoutes from './routes/messages.js';
 import recommendationRoutes from './routes/recommendations.js';
 import notificationRoutes from './routes/notifications.js';
-
+import morgan from "morgan";
 // Load environment variables
 dotenv.config();
 
@@ -27,6 +27,7 @@ app.use(express.json());
 // Connect to MongoDB
 const connectDB = async () => {
     try {
+	console.log("database ki maa ki chut: ",process.env.MONGODB_URI);
         await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/studentnet');
         console.log('✅ MongoDB connected successfully');
     } catch (error) {
@@ -37,7 +38,7 @@ const connectDB = async () => {
 };
 
 connectDB();
-
+app.use(morgan('dev'));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
